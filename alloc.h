@@ -169,7 +169,7 @@ namespace MySTL
 			*/
 			return (((bytes)+__ALIGN - 1) & ~(__ALIGN - 1));
 		}
-		
+
 	private:
 		// union的大小是结构体里面最大的那个，其他成员共用此内存
 		// 由于使用union，指针的第一个字段，它可被视为一个指针，指向相同形式的另一个FreeList
@@ -234,19 +234,6 @@ namespace MySTL
 		__Default_Alloc_Template<threads, inst>::free_list[__NUMBER_OF_FREELIST] = 
 	{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }; 
 
-	
-	template<bool threads, int inst>
-	inline void* __Default_Alloc_Template<threads, inst>::refill(size_t n)
-	{
-		return nullptr;
-	}
-
-	template<bool threads, int inst>
-	inline char* __Default_Alloc_Template<threads, inst>::chunk_alloc(size_t size, int& nFreeList)
-	{
-		return nullptr;
-	}
-
 	// 编译器生成的是inline版本，我觉得没必要
 	template<bool threads, int inst>
 	void* __Default_Alloc_Template<threads, inst>::allocate(size_t n)
@@ -304,6 +291,54 @@ namespace MySTL
 	
 	template<bool threads, int inst>
 	void* __Default_Alloc_Template<threads, inst>::reallocate(void* p, size_t old_size, size_t new_size)
+	{
+		return nullptr;
+	}
+
+	template<bool threads, int inst>
+	void* __Default_Alloc_Template<threads, inst>::refill(size_t n)
+	{
+		// 分配的节点数量
+		int number_of_Free_List_Node = 20;
+		// 指向chunk_alloc分配的结果
+		char* chunk = chunk_alloc(n, number_of_Free_List_Node);
+
+		// number_of_Free_List_Node是地址传入，会改变，若只获得一个区块，那么直接分配给调用者，free_list无新节点
+		if (1 == number_of_Free_List_Node) return (chunk);
+
+		FreeList* volatile* my_free_list;
+		my_free_list = free_list + __free_list_index(n);
+
+		// 定义用于接收chunk分配结果的变量，当前空闲节点、下一个空闲节点的变量
+		FreeList* result, * current_free_list, * next_free_list;
+		result = (FreeList*)chunk;
+
+		// 令free_list指向新分配的空间，为什么是chunk+n？还是找到当前的链表编号吗？？
+		// 这里这个是*my_free_list，它指向的是区块
+		问题在此未解决
+		*my_free_list = next_free_list = (FreeList*)(chunk + n);
+
+		// 将各个free_list节点串联起来，从1开始是因为0被分配给客户了
+		for (int i = 1;; ++i)
+		{
+			// 
+			current_free_list = next_free_list;
+			next_free_list = (FreeList*)((char*)next_free_list + n);
+			if (number_of_Free_List_Node - 1 == i)
+			{
+				current_free_list->free_list_link = 0;
+				break;
+			}
+			else
+			{
+				current_free_list->free_list_link = next_free_list;
+			}
+		}
+		return (result);
+	}
+
+	template<bool threads, int inst>
+	char* __Default_Alloc_Template<threads, inst>::chunk_alloc(size_t size, int& nFreeList)
 	{
 		return nullptr;
 	}
