@@ -121,7 +121,7 @@ namespace MySTL
 	typedef _Malloc_Alloc_Template<0> malloc_alloc;
 
 
-
+	
 
 	/* 第二级配置器
 	* 当区块足够大，交移第一级管理器，小于一定值，就以内存池管理
@@ -139,7 +139,7 @@ namespace MySTL
 		enum { __ALIGN = 8 };
 
 		// FreeList的个数
-		enum { __NUMBER_OF_FREELIST = __SMALL_OBJECT_BYTES / __ALIGN };
+		enum { __NUMBER_OF_FREELIST = __SMALL_OBJECT_MAX_BYTES / __ALIGN };
 	private:
 		static size_t __round_up(size_t bytes)
 		{
@@ -185,6 +185,8 @@ namespace MySTL
 	private:
 		// volatile 防止编译器优化导致出现不明确行为
 		static FreeList* volatile free_list[__NUMBER_OF_FREELIST];
+
+		// 查找区块编号
 		static size_t __free_list_index(size_t bytes)
 		{
 			// 这个也很简单，例如传入12，即0000 1100，加上0000 0111等于0001 0011
@@ -233,6 +235,18 @@ namespace MySTL
 	{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }; 
 
 
+	template<bool threads, int inst>
+	inline void* __Default_Alloc_Template<threads, inst>::refill(size_t n)
+	{
+		return nullptr;
+	}
+
+	template<bool threads, int inst>
+	inline char* __Default_Alloc_Template<threads, inst>::chunk_alloc(size_t size, int& nFreeList)
+	{
+		return nullptr;
+	}
+
 	// 编译器生成的是inline版本，我觉得没必要
 	template<bool threads, int inst>
 	void* __Default_Alloc_Template<threads, inst>::allocate(size_t n)
@@ -250,7 +264,6 @@ namespace MySTL
 		
 		// 找到相应的区块
 		my_free_list = free_list + __free_list_index(n);
-		my_free_list = free_list + __free_list_index(d)
 
 		// result指向该区块的第一个
 		result = *my_free_list;
@@ -271,8 +284,8 @@ namespace MySTL
 	template<bool threads, int inst>
 	void* __Default_Alloc_Template<threads, inst>::deallocate(void* p, size_t n)
 	{
+		r
 		
-		return nullptr;
 	}
 	
 	template<bool threads, int inst>
@@ -280,5 +293,5 @@ namespace MySTL
 	{
 		return nullptr;
 	}
-
+	
 }
