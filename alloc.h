@@ -2,7 +2,7 @@
 typedef _malloc_alloc_template<0> malloc_alloc;
 typedef malloc_alloc alloc;
 # else
-typedef _default_alloc_template<_NODE_ALLOCATOR_THREADS, 0> alloc;
+// typedef __Default_Alloc_Template<__NODE_ALLOCATOR_THREADS, 0> alloc;
 #endif // _USE_MALLOC
 
 #if 0
@@ -123,37 +123,25 @@ namespace MySTL
 
 
 
-	// union的大小是结构体里面最大的那个，其他成员共用此内存
-	// 由于使用union，指针的第一个字段，它可被视为一个指针，指向相同形式的另一个FreeList
-	// 它的第二个字段FreeList可以被视为一个指针，指向实际区块
-	// 一物二用的结果就是不会因为维护链表所必须的指针而造成内存的另一种浪费
-	union FreeList
-	{
-		// 指向下一个区块
-		union FreeList* free_list_link;
-		// 区块首地址
-		char client_data[1];
-	};
-
-
 	/* 第二级配置器
 	* 当区块足够大，交移第一级管理器，小于一定值，就以内存池管理
 	* 内存池又称次层配置：每次配置一大块内存，并维护对应的自由链表
 	* 下次有相同的内存需求，就直接从FreeList中拔出，释放后回收
 	*/
+	template<bool threads, int inst>
 	class __Default_Alloc_Template
 	{
 	private:
 		// 枚举值全部由大写字面组成，单词通过下划线分割
-		enum { __SMALL_OBJECT_BYTES = 1024 };
+		enum { __SMALL_OBJECT_MAX_BYTES = 128 };
 
-		// 这里能不能和minSTL写的那种，有不同范围的上调
+		// 这里能不能和minSTL写的那种，有不同范围的上调呢？
 		enum { __ALIGN = 8 };
 
 		// FreeList的个数
 		enum { __NUMBER_OF_FREELIST = __SMALL_OBJECT_BYTES / __ALIGN };
 	private:
-		static size_t RoundUP(size_t bytes)
+		static size_t __round_up(size_t bytes)
 		{
 			// 上调边界
 			/*
@@ -181,13 +169,116 @@ namespace MySTL
 			*/
 			return (((bytes)+__ALIGN - 1) & ~(__ALIGN - 1));
 		}
+		
+	private:
+		// union的大小是结构体里面最大的那个，其他成员共用此内存
+		// 由于使用union，指针的第一个字段，它可被视为一个指针，指向相同形式的另一个FreeList
+		// 它的第二个字段FreeList可以被视为一个指针，指向实际区块
+		// 一物二用的结果就是不会因为维护链表所必须的指针而造成内存的另一种浪费
+		union FreeList
+		{
+			// 指向下一个区块
+			union FreeList* free_list_link;
+			// 区块首地址
+			char client_data[1];
+		};
+	private:
+		// volatile 防止编译器优化导致出现不明确行为
+		static FreeList* volatile free_list[__NUMBER_OF_FREELIST];
+		static size_t __free_list_index(size_t bytes)
+		{
+			// 这个也很简单，例如传入12，即0000 1100，加上0000 0111等于0001 0011
+			// 即16+3 = 19， 19/8 = 2， 2-1即区块位置(从0开始)，又或是可以看成右移，0001 0011右移3个单位
+			// 0000 0010 就是2
+			return (((bytes)+__ALIGN - 1) / __ALIGN - 1);
+		}
 
-		//static size_t RoundUP1(size_t bytes)
-		//{
-		//	// enum{ __ALIGN1 = 8, __ALIGN2 = 16, ...};
-		//	// choiceAlign(bytes)//选择合适的上调边界
-		//	//  return (((bytes) + choiceAlign(bytes) - 1) & ~(choiceAlign(bytes) - 1));
-		//	//
-		//}
+		// 返回一个大小为n的对象，并可能加入大小为n的其它区块到free_list
+		static void* refill(size_t n);
+
+		// 配置一大块空间，可容纳nFreeList个大小为“size”的区块
+		// 如果配置nFreeList有所不便，可能会降低配置数量
+		static char* chunk_alloc(size_t size, int& nFreeList);
+
+		// chunk:厚块，组块，大块
+		// chunk allocation state: 区块分配状态
+		static char* start_free; // 内存池起始位置
+		static char* end_free; // 内存池结束位置
+		static size_t heap_size;// 堆大小
+
+	public:
+		// 空间配置函数
+		static void* allocate(size_t n);
+
+		// 空间回收函数
+		static void* deallocate(void* p, size_t n);
+
+		// 空间再分配
+		static void* reallocate(void* p, size_t old_size, size_t new_size);
 	};
+
+	// 初始值设定
+	template <bool threads, int inst>
+	char* __Default_Alloc_Template<threads, inst>::start_free = 0;
+
+	template <bool threads, int inst>
+	char* __Default_Alloc_Template<threads, inst>::end_free = 0;
+
+	template <bool threads, int inst>
+	size_t __Default_Alloc_Template<threads, inst>::heap_size = 0;
+
+	template <bool threads, int inst>
+	__Default_Alloc_Template<threads, inst>::FreeList* volatile
+		__Default_Alloc_Template<threads, inst>::free_list[__NUMBER_OF_FREELIST] = 
+	{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }; 
+
+
+	// 编译器生成的是inline版本，我觉得没必要
+	template<bool threads, int inst>
+	void* __Default_Alloc_Template<threads, inst>::allocate(size_t n)
+	{
+		// 大于小区块标准就用一级配置器
+		if (n > (size_t)__SMALL_OBJECT_MAX_BYTES)
+		{
+			return (malloc_alloc::allocate(n));
+		}
+		//流程是找到相应区块，然后将该区块的第一个拔出，然后调整原第二块为第一块，回收有deallocate负责
+		
+		// 二级指针
+		FreeList* volatile* my_free_list;
+		FreeList* result;
+		
+		// 找到相应的区块
+		my_free_list = free_list + __free_list_index(n);
+		my_free_list = free_list + __free_list_index(d)
+
+		// result指向该区块的第一个
+		result = *my_free_list;
+
+		// 当没有找到，也就是空指针时(应该是空指针)
+		if (result == 0)
+		{
+			// 准备重新装填free_list
+			void* r = refill(__round_up(n));
+			return r;
+		}
+
+		// 调整free_list
+		*my_free_list = result->free_list_link;
+		return (result);
+	}
+	
+	template<bool threads, int inst>
+	void* __Default_Alloc_Template<threads, inst>::deallocate(void* p, size_t n)
+	{
+		
+		return nullptr;
+	}
+	
+	template<bool threads, int inst>
+	void* __Default_Alloc_Template<threads, inst>::reallocate(void* p, size_t old_size, size_t new_size)
+	{
+		return nullptr;
+	}
+
 }
