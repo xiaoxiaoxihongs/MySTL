@@ -234,7 +234,7 @@ namespace MySTL
 		__Default_Alloc_Template<threads, inst>::free_list[__NUMBER_OF_FREELIST] = 
 	{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }; 
 
-
+	
 	template<bool threads, int inst>
 	inline void* __Default_Alloc_Template<threads, inst>::refill(size_t n)
 	{
@@ -257,11 +257,12 @@ namespace MySTL
 			return (malloc_alloc::allocate(n));
 		}
 		//流程是找到相应区块，然后将该区块的第一个拔出，然后调整原第二块为第一块，回收有deallocate负责
-		
+
 		// 二级指针
 		FreeList* volatile* my_free_list;
 		FreeList* result;
-		
+
+
 		// 找到相应的区块
 		my_free_list = free_list + __free_list_index(n);
 
@@ -284,8 +285,21 @@ namespace MySTL
 	template<bool threads, int inst>
 	void* __Default_Alloc_Template<threads, inst>::deallocate(void* p, size_t n)
 	{
-		r
-		
+		if (n > (size_t)__SMALL_OBJECT_MAX_BYTES)
+		{
+			malloc_alloc::deallocate(p, n);
+			return;
+		}
+
+		FreeList* volatile* my_free_list;
+		// 对p进行转换
+		FreeList* q = (FreeList*)p;
+		// 定位到该区块
+		my_free_list = free_list + __free_list_index(n);
+		// 将q的指向下一个空闲区设置为对应的区块，作为头部
+		q->free_list_link = *my_free_list;
+		// 再将头节点指向本区块
+		*my_free_list = q;
 	}
 	
 	template<bool threads, int inst>
