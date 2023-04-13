@@ -297,7 +297,19 @@ namespace MySTL
 	template<bool threads, int inst>
 	void* __Default_Alloc_Template<threads, inst>::reallocate(void* p, size_t old_size, size_t new_size)
 	{
-		return nullptr;
+		if (old_size > (size_t)__SMALL_OBJECT_MAX_BYTES && new_size > (size_t)__SMALL_OBJECT_MAX_BYTES)
+		{
+			return (malloc_alloc::reallocate(p, old_size,new_size));
+		}
+		void* result;
+		size_t copy_sz;
+		if (__round_up(old_size) == __round_up(new_size)) return (p);
+		
+		result = allocate(new_size);
+		copy_sz = new_size > old_size ? old_size : new_size;
+		memcpy(result, p, copy_sz);
+		deallocate(p, old_size);
+		return (result);
 	}
 
 	template<bool threads, int inst>
@@ -379,25 +391,58 @@ namespace MySTL
 		{
 			// 向heap申请内存，大小为2倍的需求量再加上一个随配置次数增加而增加的附加量
 			// 这个附加量是什么？它是我们定义的size_t类型的数，被初始化为0，右移4位等于heap_size/2^4,再向上整，意义？
+			// 是为了存储FreeList结构吗？大概不是，附加量就是n个区块，可能是因为防止频繁申请，若是申请的次数越多，就请求更多的内存注入到内存池中
 			size_t bytes_required = 2 * total_bytes + __round_up(heap_size >> 4);
 
 			// 试着让内存池的残余零头还有应用价值
 			if (bytes_left > 0)
 			{
 				// 内存池还有些零头，分配给适当的free_list
-				// 将这些零头分配给合适大小的free_list，例如还有12bytes就创建一个8bytes的块
-				// 将这个块编入free_list[0]这个区块，再剩余的就没法用了，能不能将剩下的还给系统呢？
+				// 将这些零头分配给合适大小的free_list，
+				// 会出现例如还有12bytes就创建一个8bytes的块
+				// 将这个块编入free_list[0]这个区块，再剩余的就没法用了这样的情况呢？
 				FreeList* volatile* my_free_list = free_list + __free_list_index(bytes_left);
 				((FreeList*)start_free)->free_list_link = *my_free_list;
 				*my_free_list = (FreeList*)start_free;
 			}
 
+			// 申请堆空间
 			start_free = (char*)malloc(bytes_required);
-			if ()
+			// 申请不到heap空间时，就查看我们手头上面的内存
+			if (0 == start_free)
+			{
+				FreeList* volatile* my_free_list, * p;
+				// 在我们拥有的资源里查找未使用且足够大的区块
+				for (int i = size; i <= __SMALL_OBJECT_MAX_BYTES; i += __ALIGN)
+				{
+					my_free_list = free_list + __free_list_index(i);
+					// p指向该区块的第一个
+					p = *my_free_list;
+					// 当有空闲区时
+					if (0 != p)
+					{
+						// 将这个空闲区释放
+						*my_free_list = p->free_list_link;
+						// 重新设置内存池
+						start_free = (char*)p;
+						end_free = start_free + i;
+						// 递归调用，为了修正nFreeList，并且这样可以让任何残余的零头编入适当的free_list备用
+						return (chunk_alloc(size, nFreeList));
+					}
+				}
+
+				// 如果到处都找不到内存，调用第一级的out-of-memory，看看能不能弄点内存来
+				// 可能会抛出异常或改善内存不足的情况
+				end_free = 0;
+				start_free = (char*)malloc_alloc::allocate(bytes_required);
+			}
+
+			// 申请到内存后修改堆大小和末位置
+			heap_size += bytes_required;
+			end_free = start_free + bytes_required;
+			// 仍是递归调用，修正nFreeList
+			return (chunk_alloc(size, nFreeList));
 		}
-
-
-		return (result);
 	}
 	
 }
