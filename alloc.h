@@ -1,8 +1,10 @@
+#   define __NODE_ALLOCATOR_LOCK
+#   define __NODE_ALLOCATOR_UNLOCK
+#   define __NODE_ALLOCATOR_THREADS false
+
 #ifdef _USE_MALLOC
 typedef _malloc_alloc_template<0> malloc_alloc;
 typedef malloc_alloc alloc;
-# else
-// typedef __Default_Alloc_Template<__NODE_ALLOCATOR_THREADS, 0> alloc;
 #endif // _USE_MALLOC
 
 #if 0
@@ -68,6 +70,7 @@ namespace MySTL
 			void (*old)() = _malloc_alloc_oom_handler;
 			_malloc_alloc_oom_handler = f;
 			return (old);
+			
 		}
 		// 上面的函数首部利用尾置表达式可以写成这样
 		// auto set_malloc_handler(void (*f)()) -> void(*)()
@@ -255,7 +258,7 @@ namespace MySTL
 
 		// result指向该区块的第一个
 		result = *my_free_list;
-
+		
 		// 当没有找到，也就是空指针时(应该是空指针)
 		if (result == 0)
 		{
@@ -272,21 +275,23 @@ namespace MySTL
 	template<bool threads, int inst>
 	void* __Default_Alloc_Template<threads, inst>::deallocate(void* p, size_t n)
 	{
+		// 如果大于小区块标准就调用一级分配器的
 		if (n > (size_t)__SMALL_OBJECT_MAX_BYTES)
 		{
 			malloc_alloc::deallocate(p, n);
-			return;
 		}
-
-		FreeList* volatile* my_free_list;
-		// 对p进行转换
-		FreeList* q = (FreeList*)p;
-		// 定位到该区块
-		my_free_list = free_list + __free_list_index(n);
-		// 将q的指向下一个空闲区设置为对应的区块，作为头部
-		q->free_list_link = *my_free_list;
-		// 再将头节点指向本区块
-		*my_free_list = q;
+		else
+		{
+			FreeList* volatile* my_free_list;
+			// 对p进行转换
+			FreeList* q = (FreeList*)p;
+			// 定位到该区块
+			my_free_list = free_list + __free_list_index(n);
+			// 将q的指向下一个空闲区设置为对应的区块，作为头部
+			q->free_list_link = *my_free_list;
+			// 再将头节点指向本区块
+			*my_free_list = q;
+		}
 	}
 	
 	template<bool threads, int inst>
@@ -311,21 +316,22 @@ namespace MySTL
 
 		// 定义用于接收chunk分配结果的变量，当前空闲节点、下一个空闲节点的变量
 		FreeList* result, * current_free_list, * next_free_list;
+		// 直接返回给客户端
 		result = (FreeList*)chunk;
 
-		// 令free_list指向新分配的空间，为什么是chunk+n？还是找到当前的链表编号吗？？
-		// 这里这个是*my_free_list，它指向的是区块
-		问题在此未解决
+		// 令free_list指向新分配的空间，chunk返回的是内存池空闲空间左起点，n是需求分配的块的大小
 		*my_free_list = next_free_list = (FreeList*)(chunk + n);
 
 		// 将各个free_list节点串联起来，从1开始是因为0被分配给客户了
 		for (int i = 1;; ++i)
 		{
-			// 
+			// 将当前节点设置为下一个节点
 			current_free_list = next_free_list;
+			// 下一个节点往后移n个单位
 			next_free_list = (FreeList*)((char*)next_free_list + n);
 			if (number_of_Free_List_Node - 1 == i)
 			{
+				// 当循环次数等于能设置的节点数时，当前节点的下一个节点置0，否则就将当前节点设置成下一个节点
 				current_free_list->free_list_link = 0;
 				break;
 			}
@@ -337,10 +343,61 @@ namespace MySTL
 		return (result);
 	}
 
+	// nFreeList是pass by reference
+	// 从内存池中去空间给freelist使用
 	template<bool threads, int inst>
 	char* __Default_Alloc_Template<threads, inst>::chunk_alloc(size_t size, int& nFreeList)
 	{
-		return nullptr;
+		char* result;
+		
+		size_t total_bytes = size * nFreeList;
+		// 内存池剩余空间，是从左边开始分配的，所以声明成左边界
+		size_t bytes_left = end_free - start_free;
+
+		// 当内存池完全满足需求时
+		if (bytes_left >= total_bytes)
+		{
+			// 将内存池的左边界向右调整申请的大小
+			result = start_free;
+			start_free += total_bytes;
+			return (result);
+		}
+		// 当内存池不能完全满足需求，只能供应一个或以上的区块时
+		else if (bytes_left >= size)
+		{
+			// 重新设置能够分配的节点个数，pass by reference
+			nFreeList = bytes_left / size;
+			// 重新设置总申请空间
+			total_bytes = size * nFreeList;
+			// 和上面分配一样
+			result = start_free;
+			start_free += total_bytes;
+			return (result);
+		}
+		// 当内存池一个区块的大小都满足不了时
+		else
+		{
+			// 向heap申请内存，大小为2倍的需求量再加上一个随配置次数增加而增加的附加量
+			// 这个附加量是什么？它是我们定义的size_t类型的数，被初始化为0，右移4位等于heap_size/2^4,再向上整，意义？
+			size_t bytes_required = 2 * total_bytes + __round_up(heap_size >> 4);
+
+			// 试着让内存池的残余零头还有应用价值
+			if (bytes_left > 0)
+			{
+				// 内存池还有些零头，分配给适当的free_list
+				// 将这些零头分配给合适大小的free_list，例如还有12bytes就创建一个8bytes的块
+				// 将这个块编入free_list[0]这个区块，再剩余的就没法用了，能不能将剩下的还给系统呢？
+				FreeList* volatile* my_free_list = free_list + __free_list_index(bytes_left);
+				((FreeList*)start_free)->free_list_link = *my_free_list;
+				*my_free_list = (FreeList*)start_free;
+			}
+
+			start_free = (char*)malloc(bytes_required);
+			if ()
+		}
+
+
+		return (result);
 	}
 	
 }
