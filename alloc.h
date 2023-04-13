@@ -232,9 +232,11 @@ namespace MySTL
 	template <bool threads, int inst>
 	size_t __Default_Alloc_Template<threads, inst>::heap_size = 0;
 
+
 	template <bool threads, int inst>
 	__Default_Alloc_Template<threads, inst>::FreeList* volatile
-		__Default_Alloc_Template<threads, inst>::free_list[__NUMBER_OF_FREELIST] = 
+		__Default_Alloc_Template<threads, inst>::free_list[
+			__Default_Alloc_Template<threads, inst>::__NUMBER_OF_FREELIST] =
 	{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }; 
 
 	// 编译器生成的是inline版本，我觉得没必要
@@ -405,7 +407,7 @@ namespace MySTL
 				((FreeList*)start_free)->free_list_link = *my_free_list;
 				*my_free_list = (FreeList*)start_free;
 			}
-
+			
 			// 申请堆空间
 			start_free = (char*)malloc(bytes_required);
 			// 申请不到heap空间时，就查看我们手头上面的内存
