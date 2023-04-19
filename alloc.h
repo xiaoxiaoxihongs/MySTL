@@ -12,15 +12,14 @@ typedef malloc_alloc alloc;
 #    define _THROW_BAD_ALLOC throw bad_alloc
 #elif !defined(_THROW_BAD_ALLOC)
 #    include<iostream>
-#	 define _THROW_BAD_ALLOC cerr<< "out of memory!" << endl; exit(1);
+#	 define _THROW_BAD_ALLOC std::cerr<< "out of memory!" << std::endl; exit(1);
 #endif
 
 namespace MySTL 
 {
-	// 第一级配置器
-	// STL中写的是template<int inst>, 模板偏特化的问题，不是很懂，
-	// 但下面这个是C++11的特性，用...来代表可变模板参数, 我觉得差不多
-	// template<class... T>
+	// inst为了定义多个内容相同但class类型不同的模板？
+	// 根据编译模式的不同而适应不同的实现？
+	// 使用非型别参数inst可以获得一组不同的静态成员？
 	template<int inst>
 	class _Malloc_Alloc_Template {
 	private:
@@ -52,7 +51,7 @@ namespace MySTL
 		// 扩大已分配的内存
 		static void* reallocate(void* p, size_t /* old size*/, size_t new_size)
 		{
-			void* result = malloc(p, new_size);
+			void* result = realloc(p, new_size);
 			if (0 == result) result = oom_realloc(p, new_size);
 			return result;
 		}
