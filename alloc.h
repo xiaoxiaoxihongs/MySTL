@@ -2,10 +2,6 @@
 #   define __NODE_ALLOCATOR_UNLOCK
 #   define __NODE_ALLOCATOR_THREADS false
 
-#ifdef _USE_MALLOC
-typedef _malloc_alloc_template<0> malloc_alloc;
-typedef malloc_alloc alloc;
-#endif // _USE_MALLOC
 
 #if 0
 #    include<new>
@@ -122,7 +118,28 @@ namespace MySTL
 
 	typedef _Malloc_Alloc_Template<0> malloc_alloc;
 
+	//接口实现，使用者传递配置器进来调用相应函数
+	template<class T, class Alloc>
+	class simple_alloc {
 
+	public:
+		static T* allocate(size_t n)
+		{
+			return 0 == n ? 0 : (T*)Alloc::allocate(n * sizeof(T));
+		}
+		static T* allocate(void)
+		{
+			return (T*)Alloc::allocate(sizeof(T));
+		}
+		static void deallocate(T* p, size_t n)
+		{
+			if (0 != n) Alloc::deallocate(p, n * sizeof(T));
+		}
+		static void deallocate(T* p)
+		{
+			Alloc::deallocate(p, sizeof(T));
+		}
+	};
 	
 
 	/* 第二级配置器

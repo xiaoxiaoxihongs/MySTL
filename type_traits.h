@@ -1,6 +1,7 @@
 #pragma once
 
-namespace MySTL {
+namespace MySTL 
+{
     struct __true_type {
     };
 
