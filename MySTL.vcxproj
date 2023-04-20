@@ -141,6 +141,7 @@
   <ItemGroup>
     <ClInclude Include="alloc.h" />
     <ClInclude Include="construct.h" />
+    <ClInclude Include="E:\C++\SGI-STL-master\SGI-STL V3.3\stl_iterator_base.h" />
     <ClInclude Include="iterator_base.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

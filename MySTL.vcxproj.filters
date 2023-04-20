@@ -24,5 +24,8 @@
     <ClInclude Include="iterator_base.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="E:\C++\SGI-STL-master\SGI-STL V3.3\stl_iterator_base.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
