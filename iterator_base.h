@@ -191,4 +191,6 @@ namespace MySTL
 	{
 		__advance(it, n, iterator_category(i));
 	}
+
+#define Value_type(_i) value_type(_i)
 }

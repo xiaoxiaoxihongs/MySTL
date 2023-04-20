@@ -444,6 +444,7 @@ namespace MySTL
 			// 仍是递归调用，修正nFreeList
 			return (chunk_alloc(size, nFreeList));
 		}
+
 	}
-	
+	typedef __Default_Alloc_Template<false, 0> alloc;
 }
