@@ -144,7 +144,6 @@
     <ClInclude Include="construct.h" />
     <ClInclude Include="E:\C++\SGI-STL-master\SGI-STL V3.3\stl_iterator_base.h" />
     <ClInclude Include="iterator_base.h" />
-    <ClInclude Include="memory.h" />
     <ClInclude Include="type_traits.h" />
     <ClInclude Include="uninitialized.h" />
     <ClInclude Include="vector.h" />
