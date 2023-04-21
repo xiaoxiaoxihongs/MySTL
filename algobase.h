@@ -8,4 +8,5 @@ namespace MySTL
 		for (; n > 0; --n, ++first) *first = value;
 		return first;
 	}
+
 }
