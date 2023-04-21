@@ -3,6 +3,7 @@
 #include "construct.h"
 #include "algobase.h"
 
+
 namespace MySTL
 {
 	template<class ForwardIterator, class size, class T>
