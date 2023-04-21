@@ -8,7 +8,7 @@ namespace MySTL
     struct __false_type {
     };
 
-
+    // ¿‡–Õ›Õ»°
     template <class _Tp>
     struct __type_traits {
         typedef __true_type     this_dummy_member_must_be_first;
