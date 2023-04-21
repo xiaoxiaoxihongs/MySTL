@@ -1,7 +1,3 @@
-#   define __NODE_ALLOCATOR_LOCK
-#   define __NODE_ALLOCATOR_UNLOCK
-#   define __NODE_ALLOCATOR_THREADS false
-
 
 #if 0
 #    include<new>
