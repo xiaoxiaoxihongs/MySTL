@@ -24,7 +24,6 @@ namespace MySTL
 		return cur;
 	}
 
-
 	template<class ForwardIterator, class size, class T, class Tp>
 	inline ForwardIterator
 		__uninitialized_fill_n(ForwardIterator first, size n, const T& x, Tp*)
