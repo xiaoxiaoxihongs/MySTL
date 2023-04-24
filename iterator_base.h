@@ -55,6 +55,7 @@ namespace MySTL
 		int num = 0;
 	};
 
+
 	// 不含任何成员，只是型别定义
 	template<class Category, class T, class Distance = ptrdiff_t,
 		class Pointer = T*, class Reference = T&>
