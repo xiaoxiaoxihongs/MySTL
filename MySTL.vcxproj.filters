@@ -40,7 +40,4 @@
       <Filter>头文件\STL_header</Filter>
     </ClInclude>
   </ItemGroup>
-  <ItemGroup>
-    <None Include="cpp.hint" />
-  </ItemGroup>
 </Project>
