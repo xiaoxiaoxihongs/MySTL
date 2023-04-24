@@ -236,8 +236,4 @@ namespace MySTL
 	{
 		return __copy_backward(first, last, result, ITERATOR_CATEGORY(first), DISTANCE_TYPE(first));
 	}
-
-
-
-
 }
