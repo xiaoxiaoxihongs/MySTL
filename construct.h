@@ -53,7 +53,4 @@ namespace MySTL
 	// 如果元素的数值型别(value type)有trivial destructor
 	template<class ForwardIterator>
 	inline void __destroy_aux(ForwardIterator first, ForwardIterator end, __true_type ) {}
-
-
-
 }
