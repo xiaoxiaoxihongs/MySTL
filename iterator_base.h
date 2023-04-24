@@ -193,5 +193,7 @@ namespace MySTL
 		__advance(it, n, iterator_category(i));
 	}
 
-#define Value_type(_i) value_type(_i)
+#define ITERATOR_CATEGORY(_i)	iterator_category(_i)
+#define DISTANCE_TYPE(_i)		distance_type(_i)
+#define VALUE_TYPE(_i)			value_type(_i)
 }

@@ -30,9 +30,6 @@
     <ClInclude Include="iterator_base.h">
       <Filter>头文件\STL_header</Filter>
     </ClInclude>
-    <ClInclude Include="E:\C++\SGI-STL-master\SGI-STL V3.3\stl_iterator_base.h">
-      <Filter>头文件\STL_header</Filter>
-    </ClInclude>
     <ClInclude Include="type_traits.h">
       <Filter>头文件\STL_header</Filter>
     </ClInclude>
@@ -42,5 +39,8 @@
     <ClInclude Include="vector.h">
       <Filter>头文件\STL_header</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="cpp.hint" />
   </ItemGroup>
 </Project>

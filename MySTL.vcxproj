@@ -142,11 +142,13 @@
     <ClInclude Include="algobase.h" />
     <ClInclude Include="alloc.h" />
     <ClInclude Include="construct.h" />
-    <ClInclude Include="E:\C++\SGI-STL-master\SGI-STL V3.3\stl_iterator_base.h" />
     <ClInclude Include="iterator_base.h" />
     <ClInclude Include="type_traits.h" />
     <ClInclude Include="uninitialized.h" />
     <ClInclude Include="vector.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="cpp.hint" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
