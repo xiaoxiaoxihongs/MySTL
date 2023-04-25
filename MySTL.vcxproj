@@ -143,6 +143,7 @@
     <ClInclude Include="alloc.h" />
     <ClInclude Include="construct.h" />
     <ClInclude Include="iterator_base.h" />
+    <ClInclude Include="list.h" />
     <ClInclude Include="type_traits.h" />
     <ClInclude Include="uninitialized.h" />
     <ClInclude Include="vector.h" />

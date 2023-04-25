@@ -39,5 +39,8 @@
     <ClInclude Include="vector.h">
       <Filter>头文件\STL_header</Filter>
     </ClInclude>
+    <ClInclude Include="list.h">
+      <Filter>头文件\STL_header</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
