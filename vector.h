@@ -137,6 +137,7 @@ namespace MySTL
 			erase(begin(), end());
 		}
 
+		// 插入位置，数量，值
 		void insert(iterator positiion, size_type n, const T& x);
 
 		// 当存储的数据达到容量的上限时，重开一个数组，把原值复制进去
