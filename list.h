@@ -167,8 +167,6 @@ namespace MySTL {
 			node->next = node;
 			node->prev = node;
 		}
-	
-
 
 	public:
 		iterator begin() { return (link_type)((*node).next); }
@@ -177,7 +175,7 @@ namespace MySTL {
 		iterator end() { return node; }
 		const_iterator cend() const noexcept{ return node; }
 
-		bool empy() const { return node->next == node; }
+		bool empty() const { return node->next == node; }
 
 		size_type size() const
 		{
@@ -281,7 +279,7 @@ namespace MySTL {
 		list(size_type n, const T& value) 
 		{
 			empty_initialize();
-			insert(begin(), n, value);
+			this->insert(begin(), n, value);
 		}
 
 		explicit list(size_type n) : list(n, T()) {}
@@ -309,11 +307,12 @@ namespace MySTL {
 	protected:
 		// 将[first,last)内所有元素移动到position之前
 		void transfer(iterator position, iterator first, iterator last);
+		
 	public:
 		// 将不同list的接合到this的position前
 		void splice(iterator position, list& x)
 		{
-			if (!x.empy()) this->transfer(position, x.begin(), x.end());
+			if (!x.empty()) this->transfer(position, x.begin(), x.end());
 		}
 
 		// 将i所指元素接合与list之前，可以是同一个list
@@ -330,32 +329,13 @@ namespace MySTL {
 		{
 			if (first != last) this->transfer(position, first, last);
 		}
-
+	
+	public:
 		// 将x合并到this中，两个list都必须经过递增排序
-		void merge(list& x) 
-		{
-			iterator first1 = begin();
-			iterator last1 = end();
-			iterator first2 = x.begin();
-			iterator last2 = x.end();
-
-			while (first1 != last1 && first2 != last2)
-			{
-				if (*first2 < *first1)
-				{
-					iterator next = first2;
-					transfer(first1, first2, ++next);
-					first2 = next;
-				}
-				else
-				{
-					++first1;
-				}
-			}
-			if (first2 != last2) transfer(last1, first2, last2);
-
-		}
+		void merge(list<T, Alloc>& x);
+		// 将*this的内容逆置
 		void reverse();
+		// 因为list不能使用算法sort()，所以要自己定义一个sort()
 		void sort();
 
 	};
@@ -439,5 +419,107 @@ namespace MySTL {
 			first.m_node.prev = temp;
 		}
 	}
+
+	template<class T, class Alloc>
+	void list<T, Alloc>::merge(list<T, Alloc>& x)
+	{
+		iterator first1 = begin();
+		iterator last1 = end();
+		iterator first2 = x.begin();
+		iterator last2 = x.end();
+
+		// list经过递增排序
+		while (first1 != last1 && first2 != last2)
+		{
+			if (*first2 < *first1)
+			{
+				// 将first2插入到first1之前
+				iterator next = first2;
+				transfer(first1, first2, ++next);
+				first2 = next;
+			}
+			else
+			{
+				++first1;
+			}
+		}
+		// 当list1到达结尾但list2还有未插入的数据时
+		if (first2 != last2) transfer(last1, first2, last2);
+	}
+
+	template<class T, class Alloc>
+	void list<T, Alloc>::reverse()
+	{
+		// 判空，若为空或仅有一个元素则不进行操作
+		// 虽然可以用size()来判断，但是比较慢
+		if (node->next == node || node->next->next == node) return;
+		iterator first = begin();
+		++first;
+
+		while (first != end())
+		{
+			// 将该节点插入到头节点之后
+			iterator old = first;
+			++first;
+			transfer(begin(), old, first);
+		}
+	}
+
+	template<class T, class Alloc>
+	void list<T, Alloc>::sort()
+	{
+		// 判空
+		if (node->next == node || node->next->next == node) return;
+
+		// 用于存放从数组中摘取出来的节点和交换中转
+		list<T, Alloc> carry;
+
+		// 用于存放中介数据，counter[0]存放2^(0+1)次方的数据
+		// counter[1]存放2^(1+1)次方的数据, counter[2]存放2^(2+1)次方的数据
+		// 当counter[x]内存放的数据达到上限时，转移到counter[x+1]中
+		list<T, Alloc> counter[64];
+
+		// 用于记录当前可处理的数据个数
+		int fill = 0;
+
+		while (!empty())
+		{
+			// 将*this中的首元素移入carry中
+			carry.splice(carry.begin(), *this, begin());
+			int i = 0;
+			// 当上一层链表满了，转移到下一层中，一层只有为空或不为空的状态，
+			// 若为空则将上层填入，此时本层填充一半，再填充时本层满，往下层填充
+			while (i < fill && !counter[i].empty())
+			{
+				// merge将carry合并到counter[i]中，merge的数据是递增的，开始时是单个元素，也算是有序
+				counter[i].merge(carry);
+				// 再将counter[i]与carry交换
+				carry.swap(counter[i++]);
+				// 为何不直接carry.merge(counter[i]); ++i;呢？
+			}
+			// 将carry中的数据交换给counter[i]
+			carry.swap(counter[i]);
+			// 当存储到fill时，扩充
+			if (i == fill) ++fill;
+		}
+
+		// 最后合并counter，再将它与原始链表交换
+		for (int i = 1; i < fill; ++i)
+			counter[i].merge(counter[i - 1]);
+		swap(counter[fill - 1]);
+		// 例如21，45，1，6这三个数据
+		// 先将21摘除放置于carry中，此时i=fill不满足条件
+		// 执行carry.swap(counter[i])，此时carry为空，counter[0]有一个数据21，扩充fill进入下一轮
+		// 将45摘除放置carry中，此时满足条件进入第二重循环，将carry与counter[0]中的元素递增合并
+		// 再交换到carry中，出第二重循环，然后再将carry交换给counter[1]，将fill置为2
+		// 将1摘除放置carry中，此时counter[0]链表为空链表，不满足，将1放入counter[0]中
+		// 将6摘除放置carry中，此时满足条件进入第二重循环，交换得到carry为 1 6
+		// ++i后仍满足条件，1 6 与 21 45 合并成1 6 21 45交换给carry，carry交付给下一个counter
+		// 
+		// 每执行完while，carry总为空，counter[i]中存放目前sort好的元素，之前的counter也为空
+		//
+	}
+
+
 
 }
