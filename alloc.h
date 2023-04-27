@@ -34,7 +34,7 @@ namespace MySTL
 		}
 
 		// 释放分配的内存
-		static void* deallocate(void* p, size_t /* n 这个参数似乎没用*/)
+		static void deallocate(void* p, size_t /* n 这个参数似乎没用*/)
 		{
 			// 释放p指针指向的内存
 			free(p);
@@ -113,6 +113,7 @@ namespace MySTL
 	}
 
 	typedef _Malloc_Alloc_Template<0> malloc_alloc;
+	// typedef malloc_alloc alloc;
 
 	//接口实现，使用者传递配置器进来调用相应函数
 	template<class T, class Alloc>
@@ -228,7 +229,7 @@ namespace MySTL
 		static void* allocate(size_t n);
 
 		// 空间回收函数
-		static void* deallocate(void* p, size_t n);
+		static void deallocate(void* p, size_t n);
 
 		// 空间再分配
 		static void* reallocate(void* p, size_t old_size, size_t new_size);
@@ -246,7 +247,7 @@ namespace MySTL
 
 
 	template <bool threads, int inst>
-	__Default_Alloc_Template<threads, inst>::FreeList* volatile
+	typename __Default_Alloc_Template<threads, inst>::FreeList* volatile
 		__Default_Alloc_Template<threads, inst>::free_list[
 			__Default_Alloc_Template<threads, inst>::__NUMBER_OF_FREELIST] =
 	{ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }; 
@@ -287,7 +288,7 @@ namespace MySTL
 	}
 	
 	template<bool threads, int inst>
-	void* __Default_Alloc_Template<threads, inst>::deallocate(void* p, size_t n)
+	void __Default_Alloc_Template<threads, inst>::deallocate(void* p, size_t n)
 	{
 		// 如果大于小区块标准就调用一级分配器的
 		if (n > (size_t)__SMALL_OBJECT_MAX_BYTES)

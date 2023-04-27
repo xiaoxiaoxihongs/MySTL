@@ -42,7 +42,7 @@ namespace MySTL
 
 	// 自己设定的比较函数
 	template<class T, class Compare>
-	inline const T& max(const T& a, const T& b, Compare compare)
+	inline const T& min(const T& a, const T& b, Compare compare)
 	{
 		return compare(b, a) ? b : a;
 	}
@@ -149,7 +149,7 @@ namespace MySTL
 		OutputIterator result, input_iterator_tag, Distance*)
 	{
 		//以迭代器是否等同来决定循环是否继续，慢
-		for (; first != last; ++first, ++last)
+		for (; first != last; ++first, ++result)
 			*result = *first;
 		return result;
 	}

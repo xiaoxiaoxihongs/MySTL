@@ -1,5 +1,5 @@
 #pragma once
-#include <iterator>
+
 
 
 namespace MySTL
@@ -32,28 +32,28 @@ namespace MySTL
 	pointer:指向迭代器所指之物
 	reference:*p的型别，根据迭代器所指之物是否允许改变，如果value type是T，那么*point应该是T&，
 	*/
-	struct my_input_iterator: public std::iterator
-		<std::input_iterator_tag, int, int, const int*, int>
-	{
-	public:
-		explicit my_input_iterator(int _num = 0) :num(_num) {}
-		my_input_iterator& operator++() 
-		{
-			//... 
-		}
-		my_input_iterator operator++(int)
-		{
-			//...
-		}
-		bool operator==(my_input_iterator it) { return num == it.num; }
-		bool operator!=(my_input_iterator it) { return !(*this == it); }
-		reference operator*() const { return num; }
+	//struct my_input_iterator: public std::iterator
+	//	<std::input_iterator_tag, int, int, const int*, int>
+	//{
+	//public:
+	//	explicit my_input_iterator(int _num = 0) :num(_num) {}
+	//	my_input_iterator& operator++() 
+	//	{
+	//		//... 
+	//	}
+	//	my_input_iterator operator++(int)
+	//	{
+	//		//...
+	//	}
+	//	bool operator==(my_input_iterator it) { return num == it.num; }
+	//	bool operator!=(my_input_iterator it) { return !(*this == it); }
+	//	reference operator*() const { return num; }
 
-		my_input_iterator begin() { return my_input_iterator(0); }
-		my_input_iterator end() { return my_input_iterator(num); }
-	private:
-		int num = 0;
-	};
+	//	my_input_iterator begin() { return my_input_iterator(0); }
+	//	my_input_iterator end() { return my_input_iterator(num); }
+	//private:
+	//	int num = 0;
+	//};
 
 
 	// 不含任何成员，只是型别定义
@@ -72,14 +72,15 @@ namespace MySTL
 	// 以下可以解决class type的萃取，但无法完成原生指针作为迭代器
 	// 如果Iterator有自己的value type，那么萃取出来的就是Iterator::value_type
 	// 而原生指针也可以通过此机制，萃取出相应类型T::value_type
-	template<class Iterator>
+	template<class I>
 	struct iterator_traits 
 	{
-		typedef typename Iterator::iterator_category iterator_category;
-		typedef typename Iterator::value_type		 value_type;
-		typedef typename Iterator::difference_type	 difference_type;
-		typedef typename Iterator::pointer			 pointer;
-		typedef typename Iterator::reference		 reference;
+		using iterator_category = typename I::iterator_category;
+		// typedef typename I::iterator_category iterator_category;
+		typedef typename I::value_type		 value_type;
+		typedef typename I::difference_type	 difference_type;
+		typedef typename I::pointer			 pointer;
+		typedef typename I::reference		 reference;
 	};
 
 	//模板特化，萃取原生指针，用于解决内嵌类型
@@ -177,21 +178,21 @@ namespace MySTL
 	inline void __advance(BidirectionalIterator& bt, Distance n, bidirectional_iterator_tag)
 	{
 		if (n >= 0)
-			while (n--) ++i;
+			while (n--) ++bt;
 		else
-			while (n++) --i;
+			while (n++) --bt;
 	}
 
 	template<class RandomAccessIterator, class Distance>
 	inline void __advance(RandomAccessIterator& rt, Distance n, random_access_iterator_tag)
 	{
-		i += n;
+		rt += n;
 	}
 
 	template<class InputIterator, class Distance>
 	inline void advance(InputIterator& it, Distance n)
 	{
-		__advance(it, n, iterator_category(i));
+		__advance(it, n, iterator_category(it));
 	}
 
 #define ITERATOR_CATEGORY(_i)	iterator_category(_i)

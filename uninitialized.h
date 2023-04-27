@@ -24,20 +24,20 @@ namespace MySTL
 		return cur;
 	}
 
-	template<class ForwardIterator, class size, class T, class Tp>
+	template<class ForwardIterator, class Size, class T, class Tp>
 	inline ForwardIterator
-		__uninitialized_fill_n(ForwardIterator first, size n, const T& x, Tp*)
+		__uninitialized_fill_n(ForwardIterator first, Size n, const T& x, Tp*)
 	{
 		typedef typename __type_traits<Tp>::is_POD_type Is_POD;
 		return __uninitialized_fill_n_aux(first, n, x, Is_POD());
 	}
 
 	// 从first开始填充n个x
-	template<class ForwardIterator, class size, class T>
+	template<class ForwardIterator, class Size, class T>
 	inline ForwardIterator
-		uninitialized_fill_n(ForwardIterator first, size n, const T& x)
+		uninitialized_fill_n(ForwardIterator first, Size n, const T& x)
 	{
-		return __uninitialized_fill_n(first, n, VALUE_TYPE(x));
+		return __uninitialized_fill_n(first, n, x, VALUE_TYPE(first));
 	}
 
 	// copy
@@ -76,7 +76,7 @@ namespace MySTL
 	inline ForwardIterator 
 		uninitialized_copy(InputIterator first, InputIterator last, ForwardIterator result)
 	{
-		return __uninitialized_copy(first, last, result, VALUE_TYPE(x));
+		return __uninitialized_copy(first, last, result, VALUE_TYPE(result));
 	}
 
 	// char特化，将[first, last)区间的数据填充到result之后
