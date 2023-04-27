@@ -46,6 +46,7 @@ public:
 	z() { std::cout << "z create"; }
 };
 
+
 int main()
 {
 	
