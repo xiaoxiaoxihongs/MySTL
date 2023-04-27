@@ -40,8 +40,8 @@ namespace MySTL
 		void insert_aux(iterator position, const T& x);
 		void deallocate()
 		{
-			// 当释放内存时，调用配置器的dellocate
-			if (start) data_allocator::dellocate(start, end_of_storage - start);
+			// 当释放内存时，调用配置器的deallocate
+			if (start) data_allocator::deallocate(start, end_of_storage - start);
 		}
 
 		// 填充并初始化，填充n个值为value
@@ -58,7 +58,7 @@ namespace MySTL
 			// 配置n个元素空间
 			iterator result = data_allocator::allocate(n);
 			// 填充函数
-			+0.(result, n, x);
+			uninitialized_fill_n(result, n, x);
 			return result;
 		}
 
@@ -105,7 +105,7 @@ namespace MySTL
 		void push_back(const T& x)
 		{
 			// 当容器还有空间时，用全局构造函数构造元素加入尾部，若没有空间则调用insert_aux函数
-			if (finsh != end_of_storage)
+			if (finish != end_of_storage)
 			{
 				construct(finish, x);
 				++finish;
