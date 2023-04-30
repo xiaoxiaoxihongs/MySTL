@@ -139,7 +139,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="deque.h" />
+    <ClInclude Include="MySTL_headers\deque.h" />
     <ClInclude Include="MySTL_headers\algobase.h" />
     <ClInclude Include="MySTL_headers\alloc.h" />
     <ClInclude Include="MySTL_headers\construct.h" />

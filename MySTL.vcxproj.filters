@@ -42,7 +42,7 @@
     <ClInclude Include="MySTL_headers\list.h">
       <Filter>头文件\STL_header</Filter>
     </ClInclude>
-    <ClInclude Include="deque.h">
+    <ClInclude Include="MySTL_headers\deque.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

@@ -1,7 +1,7 @@
 #pragma once
-#include "MySTL_headers/alloc.h"
-#include "MySTL_headers/construct.h"
-#include "MySTL_headers/uninitialized.h"
+#include "alloc.h"
+#include "construct.h"
+#include "uninitialized.h"
 
 
 namespace MySTL
