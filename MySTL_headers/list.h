@@ -26,9 +26,9 @@ namespace MySTL {
 
 	struct __list_iterator_base
 	{
-		using size_type = size_t;
-		using difference_type = ptrdiff_t;
-		using iterator_category = bidirectional_iterator_tag;
+		using size_type				= size_t;
+		using difference_type		= ptrdiff_t;
+		using iterator_category		= bidirectional_iterator_tag;
 
 		__list_node_base* node;
 
@@ -51,14 +51,14 @@ namespace MySTL {
 	template<class T, class Ref, class Ptr>
 	struct __list_iterator: public __list_iterator_base
 	{
-		using iterator = __list_iterator<T, T&, T*>;
-		using const_iterator = __list_iterator<T, const T&, const T*>;
-		using self = __list_iterator<T, Ref, Ptr>;
+		using iterator			= __list_iterator<T, T&, T*>;
+		using const_iterator	= __list_iterator<T, const T&, const T*>;
+		using self				= __list_iterator<T, Ref, Ptr>;
 
-		using value_type = T;
-		using pointer = Ptr;
-		using reference = Ref;
-		using node = __list_node<T>;
+		using value_type		= T;
+		using pointer			= Ptr;
+		using reference			= Ref;
+		using node				= __list_node<T>;
 
 
 		// 指向list节点的普通指针
