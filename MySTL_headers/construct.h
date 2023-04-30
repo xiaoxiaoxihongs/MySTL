@@ -1,7 +1,7 @@
 #pragma once
 #include <new.h>
-#include "iterator_base.h"
-#include "type_traits.h"
+#include "MySTL_headers/iterator_base.h"
+#include "MySTL_headers/type_traits.h"
 
 namespace MySTL
 {
@@ -24,11 +24,6 @@ namespace MySTL
 		// 调用T类的析构函数
 		p->~T();
 	}
-
-
-
-
-
 
 	// 如果元素的数值型别(value type)有non-trivial destructor
 	template<class ForwardIterator>

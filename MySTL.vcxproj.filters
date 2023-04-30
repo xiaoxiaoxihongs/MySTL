@@ -18,29 +18,32 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="algobase.h">
+    <ClInclude Include="MySTL_headers\algobase.h">
       <Filter>头文件\STL_header</Filter>
     </ClInclude>
-    <ClInclude Include="alloc.h">
+    <ClInclude Include="MySTL_headers\alloc.h">
       <Filter>头文件\STL_header</Filter>
     </ClInclude>
-    <ClInclude Include="construct.h">
+    <ClInclude Include="MySTL_headers\construct.h">
       <Filter>头文件\STL_header</Filter>
     </ClInclude>
-    <ClInclude Include="iterator_base.h">
+    <ClInclude Include="MySTL_headers\iterator_base.h">
       <Filter>头文件\STL_header</Filter>
     </ClInclude>
-    <ClInclude Include="type_traits.h">
+    <ClInclude Include="MySTL_headers\type_traits.h">
       <Filter>头文件\STL_header</Filter>
     </ClInclude>
-    <ClInclude Include="uninitialized.h">
+    <ClInclude Include="MySTL_headers\uninitialized.h">
       <Filter>头文件\STL_header</Filter>
     </ClInclude>
-    <ClInclude Include="vector.h">
+    <ClInclude Include="MySTL_headers\vector.h">
       <Filter>头文件\STL_header</Filter>
     </ClInclude>
-    <ClInclude Include="list.h">
+    <ClInclude Include="MySTL_headers\list.h">
       <Filter>头文件\STL_header</Filter>
+    </ClInclude>
+    <ClInclude Include="deque.h">
+      <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

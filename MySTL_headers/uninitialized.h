@@ -1,7 +1,7 @@
 #pragma once
-#include "type_traits.h"
-#include "construct.h"
-#include "algobase.h"
+#include "MySTL_headers/type_traits.h"
+#include "MySTL_headers/construct.h"
+#include "MySTL_headers/algobase.h"
 
 
 namespace MySTL

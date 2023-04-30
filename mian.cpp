@@ -1,5 +1,5 @@
 #include <iostream>
-#include "vector.h"
+#include "MySTL_headers/vector.h"
 #include<vector>
 
 template<class T>
@@ -47,16 +47,77 @@ public:
 };
 
 
+template<class T>
+void foo(T&)
+{
+	std::cout << "template<class T> foo" << std::endl;
+}
+
+template<>
+void foo<int>(int&)
+{
+	std::cout << "template<> foo" << std::endl;
+}
+
+
+void foo(int&)
+{
+	std::cout << "int foo" << std::endl;
+}
+
+template<class T>
+int foo(const T& t)
+{
+	return t;
+}
+
+template<class T, class... Tf>
+int foo(const T& t, const Tf& ... res)
+{
+	return  t + foo(res...);
+}
+
+template<class T>
+struct NumericalFunctions
+{
+	T& underlying() { return static_cast<T&>(*this); }
+	T const& underlying() const { return static_cast<T const&>(*this);}
+	void scale(double multiplicator)
+	{
+		this->underlying.setValue(this->underlying.getValue() * multiplicator);
+	}
+	void square()
+	{
+		T& underlying = static_cast<T&>(*this);
+		double temp = underlying.getValue();
+		underlying.setValue(temp * temp);
+	}
+	void setToOpposite();
+};
+
+class Sensitivity : public NumericalFunctions<Sensitivity>
+{
+public:
+	Sensitivity() : _value(0) {}
+	double getValue() const
+	{
+		return _value;
+	}
+	void setValue(double value)
+	{
+		_value = value;
+	}
+private:
+	double _value;
+};
+
+
 int main()
 {
-	
-	MySTL::vector<x> arr_x(5, 5);
-	// std::vector<x> arr_x{ 1, 2, 3, 4, 5, };
-	std::cout << counter<x>::created << std::endl;
-	std::cout << counter<x>::alive << std::endl;
-	for (auto& i : arr_x)
-		i.print();
-	counter<x> arr(arr_x[0]);
-	arr.iterface();
-	
+	Sensitivity s;
+	std::cout << s.getValue() << "   ";
+	s.setValue(20);
+	s.square();
+	std::cout << s.getValue();
+	return 0;
 }

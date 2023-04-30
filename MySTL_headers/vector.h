@@ -1,7 +1,7 @@
 #pragma once
-#include "alloc.h"
-#include "construct.h"
-#include "uninitialized.h"
+#include "MySTL_headers/alloc.h"
+#include "MySTL_headers/construct.h"
+#include "MySTL_headers/uninitialized.h"
 
 
 namespace MySTL
@@ -132,6 +132,7 @@ namespace MySTL
 			destroy(finish);
 			return position;
 		}
+
 		void clear() 
 		{
 			erase(begin(), end());
