@@ -237,4 +237,12 @@ namespace MySTL
 	{
 		return __copy_backward(first, last, result, ITERATOR_CATEGORY(first), DISTANCE_TYPE(first));
 	}
+
+	template<typename T>
+	inline void swap(T& a, T& b)
+	{
+		T temp = a;
+		a = b;
+		b = temp;
+	}
 }

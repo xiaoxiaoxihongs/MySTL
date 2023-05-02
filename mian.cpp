@@ -112,12 +112,58 @@ private:
 };
 
 
+class Foo {
+public:
+	Foo() = default;
+	Foo(const int value) :x(value) { std::cout << "value construct and x= " << x << std::endl; }
+	Foo(const Foo& copy) :x(copy.x) { std::cout << "copy construct and x= " << x  << std::endl; }
+	Foo& operator=(Foo&& m) noexcept { std::swap(x, m.x); }
+	Foo(Foo&& T) noexcept : x(T.x) { std::cout << "move construct and x= " << x << std::endl; T.x = 0; }
+	
+	~Foo(){ std::cout << "desstruct" << std::endl; }
+private:
+	int x = 0;
+};
+
+template<typename T>
+void bar(T&& x) {
+	Foo f(std::forward<T>(x));
+}
+
+Foo create()
+{
+	Foo f(10);
+	return f;
+}
+
 int main()
 {
-	Sensitivity s;
-	std::cout << s.getValue() << "   ";
-	s.setValue(20);
-	s.square();
-	std::cout << s.getValue();
+	
+	std::cout << "f1(1)" << std::endl;
+	Foo f1(1);
+	std::cout << std::endl;
+
+	std::cout << "f2(f1)" << std::endl;
+	Foo f2(f1);
+	std::cout << std::endl;
+	
+
+	std::cout << "bar(f1)" << std::endl;
+	bar(f1);
+	std::cout << std::endl;
+
+	
+	std::cout << "bar(Foo(2))" << std::endl;
+	bar(Foo(2));
+	std::cout << std::endl;
+
+	std::cout << "bar(create)" << std::endl;
+	bar(create());
+	std::cout << std::endl;
+
+	std::cout << "=" << std::endl;
+	Foo f4 = create();
+	std::cout << std::endl;
+
 	return 0;
 }
