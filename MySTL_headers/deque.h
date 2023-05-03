@@ -210,6 +210,7 @@ namespace MySTL
 		using iterator			= _Deque_iterator<T, T&, T*>;
 		using const_iterator	= _Deque_iterator<T, const T&, const T*>;
 
+		// 构造函数和拷贝构造函数
 		_Deque_base(size_t num_elements) :
 			_map(0), _map_size(0), _start(), _finish()
 		{
@@ -217,6 +218,7 @@ namespace MySTL
 		}
 		_Deque_base(const _Deque_base& base) :
 			_map(base._map), _map_size(base._map_size), _start(base._start), _finish(base._finish) {}
+		// 移动构造函数
 		template<typename U>
 		_Deque_base(_Deque_base<U>&& base) noexcept :
 			_map(base._map), _map_size(base._map_size), _start(base._start), _finish(base._finish) 
@@ -236,6 +238,7 @@ namespace MySTL
 
 		enum {_initial_map_size = 8};
 
+		// 分为两个空间配置，一个专门用于配置点，另一个用于配置map
 		using _Node_alloc = simple_alloc<T, Alloc>;
 		using _Map_alloc  = simple_alloc<T*, Alloc>;
 
@@ -340,7 +343,6 @@ namespace MySTL
 		// 元素指针的指针
 		using map_pointer = pointer*;
 		static size_t _buffer_size() { return __deque_buf_size(sizeof(_Tp)); }
-		void _fill_initialize(const value_type& value);
 
 	// 还是写经典内容
 	public:
@@ -421,7 +423,7 @@ namespace MySTL
 			swap(_finish, x._finish);
 			return *this;
 		}
-
+		// 交换deque的数据
 		void swap(deque& x)
 		{
 			std::swap(_map, x._map);
@@ -432,6 +434,7 @@ namespace MySTL
 
 	// push and pop
 	public:
+		// 用n个value填充
 		void fill_assign(size_type n, const T& value)
 		{
 			if (n > size())
@@ -445,7 +448,7 @@ namespace MySTL
 				fill(begin, end(), value);
 			}
 		}
-
+		// 在尾填充t
 		void push_back(const value_type& t)
 		{
 			if (_finish.cur != _finish.last)
@@ -456,7 +459,7 @@ namespace MySTL
 			else
 				_push_back_aux(t);
 		}
-
+		// 在尾填充类型默认值
 		void push_back()
 		{
 			if (_finish.cur != _finish.last)
@@ -467,7 +470,7 @@ namespace MySTL
 			else
 				_push_back_aux();
 		}
-
+		// 在头填充t
 		void push_front(const value_type& t)
 		{
 			if (_start.cur != _start.first)
@@ -478,7 +481,7 @@ namespace MySTL
 			else
 				_push_front_aux(t);
 		}
-
+		// 在头填充类型默认值
 		void push_front()
 		{
 			if (_start.cur != _start.first)
@@ -489,7 +492,7 @@ namespace MySTL
 			else
 				_push_front_aux();
 		}
-
+		// 尾弹出
 		void pop_back()
 		{
 			// 指向尾后元素的下一个，先移动再摧毁
@@ -501,7 +504,7 @@ namespace MySTL
 			else
 				_pop_back_aux();
 		}
-
+		// 头弹出
 		void pop_front()
 		{
 			// 指向当前需要被摧毁的元素
@@ -516,6 +519,7 @@ namespace MySTL
 		
 	// insert
 	public:
+		// 在position插入x
 		iterator insert(iterator position, const value_type& x)
 		{
 			if (position.cur == _start.cur)
@@ -534,24 +538,92 @@ namespace MySTL
 			else
 				return _insert_aux(position, x);
 		}
-
+		// 在position插入类型默认值
 		iterator insert(iterator position)
 		{
 			insert(position, value_type());
 		}
-
+		// 在position插入n个x
 		void insert(iterator position, size_type n, const value_type& x)
 		{
 			_fill_insert(position, n, x);
 		}
 
-		void insert(iterator position, const value_type* first, const value_type* last);
+		// 在position位置插入一个元素的范围，例如arr[] = {1,2,3}, 那么first就是arr，last就是arr+3
+		void insert(iterator position, const value_type* first, const value_type* last)
+		{
+			size_type n = last - first;
+			if (position.cur == _start.cur)
+			{
+				iterator new_start = _reserve_elements_at_front(n);
+				try
+				{
+					uninitialized_copy(first, last, new_start);
+					_start = new_start;
+				}
+				catch (...)
+				{
+					_destroy_nodes(new_start.node, _start.node);
+				}
+			}
+			else if (position.cur == _finish.cur)
+			{
+				iterator new_finish = _reserve_elements_at_back(n);
+				try
+				{
+					uninitialized_copy(first, last, _finish);
+					_finish = new_finish;
+				}
+				catch (...)
+				{
+					_destroy_nodes(_finish.node + 1, new_finish.node + 1);
+				}
+			}
+			else
+				_insert_aux(position, first, last, n);
+		}
+		// 在position位置插入一个元素的范围，接受迭代器
+		void insert(iterator position, const_iterator first, const_iterator last)
+		{
+			size_type n = last - first;
+			if (position.cur == _start.cur)
+			{
+				iterator new_start = _reserve_elements_at_front(n);
+				try
+				{
+					uninitialized_copy(first, last, new_start);
+					_start = new_start;
+				}
+				catch (...)
+				{
+					_destroy_nodes(new_start.node, _start.node);
+				}
+			}
+			else if (position.cur == _finish.cur)
+			{
+				iterator new_finish = _reserve_elements_at_back(n);
+				try
+				{
+					uninitialized_copy(first, last, _finish);
+					_finish = new_finish;
+				}
+				catch (...)
+				{
+					_destroy_nodes(_finish.node + 1, new_finish.node + 1);
+				}
+			}
+			else
+				_insert_aux(position, first, last, n);
 
-		void insert(iterator position, const_iterator first, const_iterator last);
+		}
+		// 两段重复的代码为何不用模板来确定呢？还是说我只希望接收迭代器类型和指针类型，而不是其他例如同一个类
+		// 哦，应该是这个理由，不要传些奇奇怪怪的东西进来
+		
+		// 可以试试newbing给的建议在note里面，到时候做做
 
 	// erase
 	public:
-		// 删除点
+		// 删除position上的元素
 		iterator erase(iterator position)
 		{
 			iterator next = position;
@@ -571,15 +643,68 @@ namespace MySTL
 			}
 			return _start + index;
 		}
-
-		// 删除范围
-		iterator erase(iterator first, iterator last);
-
-		// 清空
-		void clear();
+		// 删除first到last范围内的元素
+		iterator erase(iterator first, iterator last)
+		{
+			/*
+			和删除位置一样的道理，如果删除的位置是全部，那就直接调用clear。
+			计算元素个数和删除位置之前的元素，比较移动哪边的元素少，就覆盖哪边
+			*/
+			if (first == _start && last == _finish)
+			{
+				clear();
+				return _finish;
+			}
+			else
+			{
+				difference_type n = last - first;
+				difference_type elems_before = first - _start;
+				if (elems_before < difference_type(this->size() - n) / 2)
+				{
+					copy_backward(_start, first, last);
+					iterator new_start = _start + n;
+					destroy(_start, new_start);
+					_destroy_nodes(new_start.node, _start.node);
+					_start = new_start;
+				}
+				else
+				{
+					copy(last, _finish, first);
+					iterator new_finish = _finish - n;
+					destroy(new_finish, _finish);
+					_destroy_nodes(new_finish.node, _finish.node);
+					_finish = new_finish;
+				}
+				return _start + elems_before;
+			}
+		}
+		// 清空deque
+		void clear()
+		{
+			// 遍历start.node + 1到finish.node之间的所有节点，摧毁元素并释放空间
+			for (map_pointer tp_node= _start.node + 1; node < _finish.node; ++node)
+			{
+				destroy(*tp_node, tp_node + _buffer_size());
+				_deallocate_node(*tp_node);
+			}
+			// 当start.node和finish.node不相等时，说明deque还有两个部分分别存放在
+			// 这两个指针指向的节点，销毁中间部分，并释放finish.node节点
+			if (_start.node != _finish.node)
+			{
+				destroy(_start.cur, _start.last);
+				destroy(_finish.first, _finish.cur);
+				_deallocate_node(_finish.first);
+			}
+			else
+				destroy(_start.cur, _finish.cur);
+			
+			// 到最后会保留一个缓冲区，也就是deque的初始状态
+			_finish = _start;
+		}
 
 	// resize
 	public:
+		// 重设deque大小
 		void resize(size_type new_size, const value_type& x)
 		{
 			// 如果小于就擦除多的部分
@@ -591,41 +716,125 @@ namespace MySTL
 			else
 				insert(_finish, new_size - len, x);
 		}
-
+		// 重设deque大小，无参
 		void resize(size_type new_size) { resize(new_size, value_type()); }
 	protected:
+		// 用value填充deque
+		void _fill_initialize(const value_type& value);
+
+		// 在position插入n个x，如果有必要的话，会调用 _reserve_map_at_front 或 _reserve_map_at_back 来预留 map 的空间。
 		void _fill_insert(iterator position, size_type n, const value_type& x);
+
+		// 删除 deque 的第一个元素，当且仅当_start.cur == _start.last - 1时调用
 		void _pop_front_aux();
+
+		// 删除 deque 的最后一个元素，当且仅当_finish.cur == _finish.first时调用
 		void _pop_back_aux();
+
+		// 在 deque 的前端插入一个默认构造的元素，当且仅当_start.cur == _start.last时调用
 		void _push_front_aux();
+
+		//  在 deque 的前端插入一个由 t 拷贝构造的元素，当且仅当_start.cur == _start.last时调用
 		void _push_front_aux(const value_type& t);
+
+		//  在 deque 的后端插入一个默认构造的元素，当且仅当_finish.cur == _finish.last - 1时调用
 		void _push_back_aux();
+
+		// 在 deque 的后端插入一个由 t 拷贝构造的元素，当且仅当_finish.cur == _finish.last - 1时调用
 		void _push_back_aux(const value_type& t);
 
+		// 在 position 位置插入一个由 x 拷贝构造的元素
 		iterator _insert_aux(iterator position, const value_type& x);
+
+		// 在 position 位置插入一个默认构造的元素
 		iterator _insert_aux(iterator position);
+
+		//  在 position 位置插入 n 个由 x 拷贝构造的元素
 		void _insert_aux(iterator position, size_type n, const value_type& x);
+
+		// 在 position 位置插入 [first, last) 范围内的 n 个元素
 		void _insert_aux(iterator position, const value_type* first, const value_type* last, size_type n);
+
+		// 在 position 位置插入 [first, last) 范围内的 n 个元素
 		void _insert_aux(iterator position, const_iterator first, const_iterator last, size_type n);
 
+		// 在deque的前端预留n个元素，返回指向第一个元素的迭代器
 		iterator _reserve_elements_at_front(size_type n);
+
+		// 在deque的后端预留n个元素，返回指向第一个元素的迭代器
 		iterator _reserve_elements_at_back(size_type n);
+
+		// 在deque的前端插入new_elements个新元素
 		void new_elements_at_front(size_type new_elements);
+
+		// 在deque的后端插入new_elements个新元素
 		void new_elements_at_back(size_type new_elements);
 
+		// 在deque的map前端预留nodes_to_add个节点
 		void _reserve_map_at_front(size_type nodes_to_add = 1);
+
+		// 在deque的map后端预留nodes_to_add个节点
 		void _reserve_map_at_back(size_type nodes_to_add = 1);
+
+		// 重分配map空间，以便在两端预留nodes_to_add个空间，add_at_front为true则预留在前，否则在后
 		void _reallocate_map(size_type nodes_to_add, bool add_at_front);
 	};
 
 	template<class T, class Alloc>
 	void deque<T, Alloc>::_fill_initialize(const value_type& value)
 	{
+		map_pointer cur;
+		try
+		{
+			// 遍历deque中的每个节点node，*cur是指向一块连续内存的指针，*cur+buffer_size指向末尾
+			/*为什么for中的判断条件是<, 如果是 <= 的话能去掉uninitialized_fill(_finish.first, _finish.cur, value)吗
+			答：deque的内部结构是一个map，指向多个节点，每个节点指向一块连续内存，deque的迭代器由两部分组成
+			一个是指向节点的指针，一个是指向元素的指针。deque的开始迭代器_start.node和_finish.node并不是指向第一个元素
+			而finish.first等才是。
+			所以for中判断条件是<,表示只遍历完整的节点，不包括最后一个节点。最后一个节点需要单独处理，有可能只有部分元素需要填充
+			如果直接用<=的话，就会多填充，导致内存越界或覆盖已有元素等未定义行为。
+			*/ 
+			for (cur = _start.node; cur < _finish.node; ++cur)
+				uninitialized_fill(*cur, *cur + _buffer_size, value);
+			uninitialized_fill(_finish.first, _finish.cur, value);
+		}
+		catch (...)
+		{
+			destroy(_start, iterator(*cur, cur));
+		}
 	}
 
 	template<class T, class Alloc>
 	void deque<T, Alloc>::_fill_insert(iterator position, size_type n, const value_type& x)
 	{
+		if (position.cur == _start.cur)
+		{
+			iterator new_start = _reserve_elements_at_front(n);
+			try
+			{
+				uninitialized_fill(new_start, _start, x);
+				_start = new_start;
+			}
+			catch (...)
+			{
+				_destroy_nodes(new_start.node, _start.node);
+			}
+		}
+		else if (position.cur == _finish.cur)
+		{
+			iterator new_finish = _reserve_elements_at_front(n);
+			try
+			{
+				uninitialized_fill(_finish, new_finish, x);
+				_finish = new_finish;
+			}
+			catch (...)
+			{
+				_destroy_nodes(_finish.node + 1, new_finish.node + 1);
+			}
+		}
+		else
+			_insert_aux(position, n, x);
 	}
 
 	template<class T, class Alloc>
@@ -641,21 +850,73 @@ namespace MySTL
 	template<class T, class Alloc>
 	void deque<T, Alloc>::_push_front_aux()
 	{
+		_reserve_map_at_front();
+		*(_start.node - 1) = _allocate_node();
+		try
+		{
+			_start._set_node(_start.node - 1);
+			_start.cur = _start.last - 1;
+			construct(_start.cur);
+		}
+		catch (...)
+		{
+			++_start;
+			_deallocate_node(*(_start.node - 1));
+		}
 	}
 
 	template<class T, class Alloc>
 	void deque<T, Alloc>::_push_front_aux(const value_type& t)
 	{
+		value_type t_copy = t;
+		_reserve_map_at_front();
+		*(_start.node - 1) = _allocate_node();
+		try
+		{
+			_start._set_node(_start.node - 1);
+			_start.cur = _start.last - 1;
+			construct(_start.cur, t_copy);
+		}
+		catch (...)
+		{
+			++_start;
+			_deallocate_node(*(_start.node - 1));
+		}
 	}
 
 	template<class T, class Alloc>
 	void deque<T, Alloc>::_push_back_aux()
 	{
+		_reserve_map_at_back();
+		*(_finish.node + 1) = _allocate_node();
+		try
+		{
+			construct(_finish.cur);
+			_finish._set_node(_finish.node + 1);
+			_finish.cur = _finish.first;
+		}
+		catch (...)
+		{
+			_deallocate_node(*(_finish.node + 1));
+		}
 	}
 
 	template<class T, class Alloc>
 	void deque<T, Alloc>::_push_back_aux(const value_type& t)
 	{
+		value_type t_copy = t;
+		_reserve_map_at_back();
+		*(_finish.node + 1) = _allocate_node();
+		try
+		{
+			construct(_finish.cur, t_copy);
+			_finish._set_node(_finish.node + 1);
+			_finish.cur = _finish.first;
+		}
+		catch (...)
+		{
+			_deallocate_node(*(_finish.node + 1));
+		}
 	}
 
 	template<class T, class Alloc>
@@ -688,42 +949,129 @@ namespace MySTL
 	template<class T, class Alloc>
 	deque<T, Alloc>::iterator deque<T, Alloc>::_reserve_elements_at_front(size_type n)
 	{
-		return iterator();
+		// vacancies：空洞
+		size_type vacancies = _start.cur - _start.first;
+		if (n > vacancies)
+			new_elements_at_front(n - vacancies);
+		return _start - difference_type(n);
 	}
 
 	template<class T, class Alloc>
 	deque<T, Alloc>::iterator deque<T, Alloc>::_reserve_elements_at_back(size_type n)
 	{
-		return iterator();
+		size_type vacancies = (_finish.last - _finish.cur) - 1;
+		if (n > vacancies)
+			new_elements_at_back(n - vacancies);
+		return _finish + difference_type(n);
 	}
 
 	template<class T, class Alloc>
 	void deque<T, Alloc>::new_elements_at_front(size_type new_elements)
 	{
+		size_type new_nodes = (new_elements + _buffer_size() - 1) / _buffer_size();
+		_reserve_map_at_front(new_nodes);
+		size_type i;
+		try
+		{
+			for (i = 1; i < new_nodes; ++i)
+				*(_finish.node - i) = _allocate_node();
+		}
+		catch (...)
+		{
+			for (size_type j = 1; j < i; ++j)
+				_deallocate_node(*(_start.node - j));
+			throw;
+		}
+		
 	}
 
 	template<class T, class Alloc>
 	void deque<T, Alloc>::new_elements_at_back(size_type new_elements)
 	{
+		// deque元素不是连续存储的，所有需要得到需要的节点数，并向上取整
+		// 当new_elements是整数倍时，对结果没有影响；不是整数倍时，通过整数除法进行实现
+		// 例如5/3向上取整，我们可以先让5+(3-1) = 7, 7/3 = 2,就是答案
+		size_type new_nodes = (new_elements + _buffer_size() - 1) / _buffer_size();
+		_reserve_map_at_back(new_nodes);
+		size_type i;
+		try
+		{
+			for (i = 1; i <= new_nodes; ++i)
+				*(_finish.node + i) = _allocate_node();
+		}
+		catch (...) 
+		{
+			for (size_type j = 1; j < i; ++j)
+				_deallocate_node(*(_finish.node + j));
+			throw;
+		}
 	}
 
 	template<class T, class Alloc>
 	void deque<T, Alloc>::_reserve_map_at_front(size_type nodes_to_add)
 	{
+		// 如果当要添加的节点数大于map的起始位置和start.node之间的距离，那么就说明deque前端没有足够的空间
+		if (nodes_to_add > size_type(_start.node - _map))
+			_reallocate_map(nodes_to_add, true);
 	}
 
 	template<class T, class Alloc>
 	void deque<T, Alloc>::_reserve_map_at_back(size_type nodes_to_add)
 	{
+		// 在后端添加需要保留一个空的缓冲区
+		if (nodes_to_add + 1 > _map_size - (_finish.node - _map))
+			_reallocate_map(nodes_to_add, false);
 	}
 
 	template<class T, class Alloc>
 	void deque<T, Alloc>::_reallocate_map(size_type nodes_to_add, bool add_at_front)
 	{
+		// 疑问：重分配后的map指向包括了新的缓冲区吗？看起来不像啊
+		// 计算原来节点数和新节点数
+		size_type old_num_nodes = _finish.node - _start.node + 1;
+		size_type new_num_nodes = old_num_nodes + nodes_to_add;
+
+		map_pointer new_node_start;
+		// 如果原map空间能够容纳足够的新节点数
+		if (_map_size > 2 * new_num_nodes)
+		{
+			// 在map中找一个新的起始位置，把原来的节点复制过去
+			/* 
+			用于计算新的起始位置，在map中找到一个能够使新节点数居中对齐：(_map_size - new_num_nodes) / 2，
+			让新节点映射居中的目的是平衡两端空间，提高插入和删除效率，减少映射指针失效的概率，防止空间浪费和不必要的内存分配
+			并根据add_at_front的值，向前插入要偏移nodes_to_add个位置，想向后插入则不用。
+			例如map有二十个位置，五个位置存储了节点，我们要在前端添加三个节点，此时new_num_nodes = 8
+			那么new_node_start =_map + (20 - 8) / 2 + (true ? 3 : 0)也就是第10个位置
+			*/
+			new_node_start = _map + (_map_size - new_num_nodes) / 2 +
+				(add_at_front ? nodes_to_add : 0);
+
+			// 如果原开始位置大于新位置，那么将节点正向复制到新位置，如果小于那么就逆向复制
+			// 用上面的例子来说，new_node_start = 10 > 0(_start.node),那么从后往前复制
+			// 将原数组从15号开始复制到10号，只是挪动了原数据的位置
+			if (new_node_start < _start.node)
+				copy(_start.node, _finish.node + 1, new_node_start);
+			else
+				copy_backward(_start.node, _finish.node + 1, new_node_start + old_num_nodes);
+		}
+		else
+		{
+			// 例如map有十个位置，五个位置存储了节点，我们要在前端添加三个节点，此时new_num_nodes = 8
+			// 此时先新建一个map，大小为_map_size + max(_map_size, nodes_to_add) + 2
+			// （+2的目的在于为了避免映射指针指向映射边界，导致迭代器失效，如果有两个空闲位置那么映射指针在插入删除操作是不会越位）
+			// ，然后计算位置，因为不涉及到赋值，那么直接将原map复制到新map
+			// 的new_node_start位置，然后释放掉原map
+			size_type new_map_size = _map_size + max(_map_size, nodes_to_add) + 2;
+			map_pointer new_map = _allocate_map(new_map_size);
+			new_node_start = new_map + (new_map_size - new_num_nodes) / 2 +
+				(add_at_front ? nodes_to_add : 0);
+			copy(_start.node, _finish.node + 1, new_node_start);
+			_deallocate_map(_map, _map_size);
+
+			_map = new_map;
+			_map_size = new_map_size;
+		}
+		_start._set_node(new_node_start);
+		_finish._set_node(new_node_start + old_num_nodes + 1);
 	}
-
-
-
-
-
 }

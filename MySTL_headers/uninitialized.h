@@ -7,6 +7,45 @@
 namespace MySTL
 {
 	// fill
+	template<class ForwardIterator, class T>
+	void __uninitialized_fill_aux(ForwardIterator first,
+		ForwardIterator last, const T& x, __true_type)
+	{
+		fill(first, last, x);
+	}
+
+	template<class ForwardIterator, class T>
+	void __uninitialized_fill_aux(ForwardIterator first, 
+		ForwardIterator last, const T& x, __false_type)
+	{
+		ForwardIterator cur = first;
+		try
+		{
+			for (; cur != last; ++cur)
+			{
+				construct(&*cur, x);
+			}
+		}
+		catch (...)
+		{
+			destroy(first, cur);
+		}
+	}
+
+	template<class ForwardIterator, class T, class Tp>
+	inline void __uninitialized_fill(ForwardIterator first, 
+		ForwardIterator last, const T& x, Tp*)
+	{
+		typedef typename __type_traits<Tp>::is_POD_type Is_POD;
+		__uninitialized_fill_aux(first, last, x, Is_POD());
+	}
+
+	template<class ForwardIterator, class T>
+	inline void uninitialized_fill(ForwardIterator first, ForwardIterator last, const T& x)
+	{
+		__uninitialized_fill(first, last, T, VALUE_TYPE(first));
+	}
+	// fill_n
 	template<class ForwardIterator, class size, class T>
 	inline ForwardIterator
 		__uninitialized_fill_n_aux(ForwardIterator first, size n, const T& x, __true_type)
