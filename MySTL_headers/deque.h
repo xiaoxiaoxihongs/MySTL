@@ -725,10 +725,10 @@ namespace MySTL
 		// 在position插入n个x，如果有必要的话，会调用 _reserve_map_at_front 或 _reserve_map_at_back 来预留 map 的空间。
 		void _fill_insert(iterator position, size_type n, const value_type& x);
 
-		// 删除 deque 的第一个元素，当且仅当_start.cur == _start.last - 1时调用
+		// 当deque的第一个块只有一个元素时调用，会销毁元素并释放掉内存，然后指向下一块
 		void _pop_front_aux();
 
-		// 删除 deque 的最后一个元素，当且仅当_finish.cur == _finish.first时调用
+		// 当deque的尾部最后一个块为空时才会被调用，先销毁空块，然后在销毁前一个节点的最后一个元素
 		void _pop_back_aux();
 
 		// 在 deque 的前端插入一个默认构造的元素，当且仅当_start.cur == _start.last时调用
@@ -758,22 +758,22 @@ namespace MySTL
 		// 在 position 位置插入 [first, last) 范围内的 n 个元素
 		void _insert_aux(iterator position, const_iterator first, const_iterator last, size_type n);
 
-		// 在deque的前端预留n个元素，返回指向第一个元素的迭代器
+		// 在 deque 的前端预留n个元素，返回指向第一个元素的迭代器
 		iterator _reserve_elements_at_front(size_type n);
 
-		// 在deque的后端预留n个元素，返回指向第一个元素的迭代器
+		// 在 deque 的后端预留n个元素，返回指向第一个元素的迭代器
 		iterator _reserve_elements_at_back(size_type n);
 
-		// 在deque的前端插入new_elements个新元素
+		// 在 deque 的前端插入new_elements个新元素
 		void new_elements_at_front(size_type new_elements);
 
-		// 在deque的后端插入new_elements个新元素
+		// 在 deque 的后端插入new_elements个新元素
 		void new_elements_at_back(size_type new_elements);
 
-		// 在deque的map前端预留nodes_to_add个节点
+		// 在 deque 的map前端预留nodes_to_add个节点
 		void _reserve_map_at_front(size_type nodes_to_add = 1);
 
-		// 在deque的map后端预留nodes_to_add个节点
+		// 在 deque 的map后端预留nodes_to_add个节点
 		void _reserve_map_at_back(size_type nodes_to_add = 1);
 
 		// 重分配map空间，以便在两端预留nodes_to_add个空间，add_at_front为true则预留在前，否则在后
@@ -840,11 +840,19 @@ namespace MySTL
 	template<class T, class Alloc>
 	void deque<T, Alloc>::_pop_front_aux()
 	{
+		destroy(_start.cur);
+		_deallocate_node(_start.first);
+		_start._set_node(_start.node + 1);
+		_start.cur = _start.first;
 	}
 
 	template<class T, class Alloc>
 	void deque<T, Alloc>::_pop_back_aux()
 	{
+		_deallocate_node(_finish.first);
+		_finish._set_node(_finish.node - 1);
+		_finish.cur = _finish.last - 1;
+		destroy(_finish.cur);
 	}
 
 	template<class T, class Alloc>
@@ -922,28 +930,359 @@ namespace MySTL
 	template<class T, class Alloc>
 	deque<T, Alloc>::iterator deque<T, Alloc>::_insert_aux(iterator position, const value_type& x)
 	{
-		return iterator();
+		difference_type index = position - _start;
+		value_type x_copy = x;
+		// 经典之找少的地方插入
+		if (size_type(index) < this->size() / 2)
+		{
+			// 现在头节点处复制插入一个头元素，然后取出原头节点之后一位到position上的迭代器，
+			// 将迭代器范围内的参数覆盖到原头节点中
+			push_front(front());
+			iterator front1 = _start;
+			++front1;
+			iterator front2 = front1;
+			++front2;
+			position = _start + index;
+			iterator pos = position;
+			++pos;
+			copy(front2, pos, front1);
+		}
+		else
+		{
+			// 在尾节点处插入一个尾元素，然后把原尾元素前一位到position上的迭代器
+			// 将迭代器范围内的参数覆盖到原头节点中
+			push_back(back());
+			iterator back1 = _finish;
+			--back1;
+			iterator back2 = _finish;
+			--back2;
+			position = _start + index;
+			copy_backward(position, back2, back1);
+		}
+		*position = x_copy;
+		return position;
 	}
 
 	template<class T, class Alloc>
 	deque<T, Alloc>::iterator deque<T, Alloc>::_insert_aux(iterator position)
 	{
-		return iterator();
+		// 为啥不用_insert_aux(position, T());直接委托出去呢？
+
+		const difference_type index = position - _start;
+		// 经典之找少的地方插入
+		if (index < size() / 2)
+		{
+			// 现在头节点处复制插入一个头元素，然后取出原头节点之后一位到position上的迭代器，
+			// 将迭代器范围内的参数覆盖到原头节点中
+			push_front(front());
+			iterator front1 = _start;
+			++front1;
+			iterator front2 = front1;
+			++front2;
+			position = _start + index;
+			iterator pos = position;
+			++pos;
+			copy(front2, pos, front1);
+		}
+		else
+		{
+			// 在尾节点处插入一个尾元素，然后把原尾元素前一位到position上的迭代器
+			// 将迭代器范围内的参数覆盖到原头节点中
+			push_back(back());
+			iterator back1 = _finish;
+			--back1;
+			iterator back2 = _finish;
+			--back2;
+			position = _start + index;
+			copy_backward(position, back2, back1);
+		}
+		*position = value_type();
+		return position;
 	}
 
 	template<class T, class Alloc>
 	void deque<T, Alloc>::_insert_aux(iterator position, size_type n, const value_type& x)
 	{
+		// 插入位置之前的元素
+		const difference_type elements_before = position - _start;
+		// deque长度
+		size_type len = this->size();
+		value_type x_copy = x;
+		// 典
+		if (elements_before < difference_type(len / 2))
+		{
+			// 记录预留n个位置后，start的开始
+			iterator new_start = _reserve_elements_at_front(n);
+			iterator old_start = _start;
+			// _reserve_elements_at_front(n)之后迭代器可能会失效，指向不同位置，所以需要更新一遍
+			position = _start + elements_before;
+			try
+			{
+				// 当插入元素之前的元素大于要插入的数量时
+				if (elements_before >= difference_type(n))
+				{
+					// 原头节点+n
+					iterator start_n = _start + difference_type(n);
+					// 将原头节点到n-1(左闭右开原则)个的元素拷贝到新头节点的位置，因为uninitialized_copy只能在未初始化的空间进行
+					// 所以不能一步到位的进行uninitialized_copy(_start, _start_n + 1, new_start);
+					uninitialized_copy(_start, start_n, new_start);
+					_start = new_start;
+					// 将_start_n到position的元素拷贝到原头节点之后，其实就是一个节点
+					copy(start_n, position, old_start);
+					// 最后将空出来的位置填充
+					fill(position - difference_type(n), position, x_copy);
+					/*
+					在3号位填充2个1
+					1 2 3 4 5 6 7 8 9 -> _ _ 1 2 3 4 5 6 7 8 9 -> 1 2 1 2 3 4 5 6 7 8 9 
+					-> 1 2 3 2 3 4 5 6 7 8 9 -> 1 2 3 1 1 4 5 6 7 8 9
+					*/
+				}
+				else
+				{
+					// 现在未初始化的空间上拷贝[_start, position)
+					iterator mid = uninitialized_copy(_start, position, new_start);
+					try
+					{
+						// 然后将剩余未初始化的空间填充value
+						uninitialized_fill(mid, _start, x_copy);
+					}
+					catch (...)
+					{
+						destroy(new_start, mid);
+					}
+					_start = new_start;
+					// 再将后面的区间填充value
+					fill(old_start, position, x_copy);
+					/*
+					在3号位填充4个1
+					1 2 3 4 5 6 7 8 9 -> _ _ _ _ 1 2 3 4 5 6 7 8 9 -> 1 2 3 _ 1 2 3 4 5 6 7 8 9 ->
+					1 2 3 1 1 2 3 4 5 6 7 8 9 -> 1 2 3 1 1 1 1 4 5 6 7 8 9
+					*/
+				}
+			}
+			catch (...)
+			{
+				_destroy_nodes(new_start.node, _start.node);
+			}
+		}
+		else
+		{
+			// 同样的思路，先在后面预设元素，然后计算出插入位置之后的元素个数
+			iterator new_finish = _reserve_elements_at_back(n);
+			iterator old_finish = _finish;
+			const difference_type elements_after = difference_type(len) - elements_before;
+			// 重设position
+			position = _finish - elements_before;
+			try
+			{
+				// 当后面的元素大于要插入的元素时
+				if (elements_after > difference_type(n))
+				{
+					// 计算出填充节点(大小就是n，用来拷贝到未初始化的空间中)
+					iterator finish_n = _finish - difference_type(n);
+					uninitialized_copy(finish_n, _finish, _finish);
+					_finish = new_finish;
+					// 从后向前，也是不能一步到位的进行
+					copy_backward(position, finish_n, old_finish);
+					fill(position, position + difference_type(n), x_copy);
+					/*
+					在6号位填充2个1
+					1 2 3 4 5 6 7 8 9 -> 1 2 3 4 5 6 7 8 9 _ _ -> 1 2 3 4 5 6 7 8 9 8 9 
+					-> 1 2 3 4 5 6 7 8 7 8 9 -> 1 2 3 4 5 6 1 1 7 8 9
+					*/
+				}
+				else
+				{
+					// 当后面的元素小于等于要插入的元素时，先计算插入点到n的位置，会超出_finish
+					iterator mid = position + difference_type(n);
+					// 再未初始化的地方填充position多出的大小，直接初始化成value
+					uninitialized_fill(_finish, mid, x_copy);
+					try
+					{
+						// 然后再将position到_finish的元素初始化到最后
+						uninitialized_copy(position, _finish, mid);
+					}
+					catch (...)
+					{
+						destroy(_finish, mid);
+					}
+					_finish = new_finish;
+					// 再将原元素覆盖
+					fill(position, old_finish, x_copy);
+					/*
+					在6号位填充4个1
+					1 2 3 4 5 6 7 8 9 -> 1 2 3 4 5 6 7 8 9 _ _ _ _-> 1 2 3 4 5 6 7 8 9 1 _ _ _
+					-> 1 2 3 4 5 6 7 8 9 1 7 8 9 -> 1 2 3 4 5 6 1 1 1 1 7 8 9 
+					*/
+				}
+			}
+			catch (...)
+			{
+				_deallocate_node(_finish.node + 1, new_finish.node + 1);
+			}
+		}
 	}
 
 	template<class T, class Alloc>
 	void deque<T, Alloc>::_insert_aux(iterator position, const value_type* first, const value_type* last, size_type n)
 	{
+		const difference_type elements_before = position - _start;
+		size_type len = this->size();
+		if (elements_before < difference_type(len / 2))
+		{
+			iterator new_start = _reserve_elements_at_front(n);
+			iterator old_start = _start;
+			position = _start + elements_before;
+			try
+			{
+				if (elements_before >= difference_type(n))
+				{
+					iterator _start_n = _start + difference_type(n);
+					uninitialized_copy(_start, _start_n, new_start);
+					_start = new_start;
+					copy(_start_n, position, old_start);
+					copy(first, last, position - difference_type(n));
+				}
+				else
+				{
+					value_type* mid = first + difference_type(n) - elements_before;
+					iterator _mid = uninitialized_copy(_start, position, new_start);
+					try
+					{
+						uninitialized_copy(first, mid, _mid);
+					}
+					catch (...)
+					{
+						destroy(_start, _mid);
+					}
+					
+					_start = new_start;
+					copy(mid, last, old_start);
+				}
+			}
+			catch (...)
+			{
+				_destroy_nodes(new_start.node, _start.node);
+			}
+		}
+		else
+		{
+			iterator new_finish = _reserve_elements_at_back(n);
+			iterator old_finish = _finish;
+			const difference_type elements_after = difference_type(len) - elements_before;
+			position = _finish - elements_after;
+			try
+			{
+				if (elements_after > difference_type(n))
+				{
+					iterator finish_n = _finish - difference_type(n);
+					uninitialized_copy(finish_n, _finish, _finish);
+					_finish = new_finish;
+					copy_backward(position, finish_n, old_finish);
+					copy(first, last, position);
+				}
+				else
+				{
+					value_type* mid = first + elements_after;
+					iterator _mid = uninitialized_copy(mid, last, _finish);
+					try
+					{
+						uninitialized_copy(position, _finish, _mid);
+					}
+					catch (...)
+					{
+						destroy(_finish, _mid);
+					}
+					_finish = new_finish;
+					copy(first, mid, position);
+				}
+			}
+			catch (...)
+			{
+				_deallocate_node(_finish.node + 1, new_finish.node + 1);
+			}
+		}
 	}
 
 	template<class T, class Alloc>
 	void deque<T, Alloc>::_insert_aux(iterator position, const_iterator first, const_iterator last, size_type n)
 	{
+		const difference_type elements_before = position - _start;
+		size_type len = this->size();
+		if (elements_before < difference_type(len / 2))
+		{
+			iterator new_start = _reserve_elements_at_front(n);
+			iterator old_start = _start;
+			position = _start + elements_before;
+			try
+			{
+				if (elements_before >= difference_type(n))
+				{
+					iterator _start_n = _start + difference_type(n);
+					uninitialized_copy(_start, _start_n, new_start);
+					_start = new_start;
+					copy(_start_n, position, old_start);
+					copy(first, last, position - difference_type(n));
+				}
+				else
+				{
+					const_iterator mid = first + difference_type(n) - elements_before;
+					iterator _mid = uninitialized_copy(_start, position, new_start);
+					try
+					{
+						uninitialized_copy(first, mid, _mid);
+					}
+					catch (...)
+					{
+						destroy(_start, _mid);
+					}
+
+					_start = new_start;
+					copy(mid, last, old_start);
+				}
+			}
+			catch (...)
+			{
+				_destroy_nodes(new_start.node, _start.node);
+			}
+		}
+		else
+		{
+			iterator new_finish = _reserve_elements_at_back(n);
+			iterator old_finish = _finish;
+			const difference_type elements_after = difference_type(len) - elements_before;
+			position = _finish - elements_after;
+			try
+			{
+				if (elements_after > difference_type(n))
+				{
+					iterator finish_n = _finish - difference_type(n);
+					uninitialized_copy(finish_n, _finish, _finish);
+					_finish = new_finish;
+					copy_backward(position, finish_n, old_finish);
+					copy(first, last, position);
+				}
+				else
+				{
+					value_type* mid = first + elements_after;
+					iterator _mid = uninitialized_copy(mid, last, _finish);
+					try
+					{
+						uninitialized_copy(position, _finish, _mid);
+					}
+					catch (...)
+					{
+						destroy(_finish, _mid);
+					}
+					_finish = new_finish;
+					copy(first, mid, position);
+				}
+			}
+			catch (...)
+			{
+				_deallocate_node(_finish.node + 1, new_finish.node + 1);
+			}
+		}
 	}
 
 	template<class T, class Alloc>

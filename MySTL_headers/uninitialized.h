@@ -110,7 +110,7 @@ namespace MySTL
 		return __uninitialized_copy_aux(first, last, result, Is_POD());
 	}
 
-	// 将[first, last)区间的数据填充到result之后
+	// 将[first, last)区间的数据填充到result之后，只能在未初始化的空间进行
 	template<class ForwardIterator, class InputIterator>
 	inline ForwardIterator 
 		uninitialized_copy(InputIterator first, InputIterator last, ForwardIterator result)

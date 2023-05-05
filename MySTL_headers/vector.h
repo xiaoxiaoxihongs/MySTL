@@ -36,7 +36,7 @@ namespace MySTL
 		// 目前可使用的空间的尾
 		iterator end_of_storage;
 
-		
+		//aux表示的是辅助的意思，表示这个函数是一个辅助函数
 		void insert_aux(iterator position, const T& x);
 		void deallocate()
 		{

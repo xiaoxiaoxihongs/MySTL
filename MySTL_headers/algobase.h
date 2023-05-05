@@ -172,6 +172,7 @@ namespace MySTL
 		return result + (last - first);
 	}
 
+	// 将[first,last)的内容复制到result + (last - first)区间内
 	template<class InputIterator, class OutputIterator>
 	inline OutputIterator copy(InputIterator first, InputIterator last,
 		OutputIterator result)
