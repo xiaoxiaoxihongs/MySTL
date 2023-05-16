@@ -1,5 +1,4 @@
 #pragma once
-#include "iterator_base.h"
 #include "alloc.h"
 #include "construct.h"
 
@@ -58,21 +57,17 @@ namespace MySTL {
 		using value_type		= T;
 		using pointer			= Ptr;
 		using reference			= Ref;
-		using node				= __list_node<T>;
-
-
-		// 指向list节点的普通指针
-		node m_node;
+		using Node				= __list_node<T>;
 
 		// 构造函数
-		__list_iterator() = default;
-		__list_iterator(node* x) : __list_iterator_base(x) {}
-		__list_iterator(const iterator& x) :__list_iterator_base(x.m_node) {}
+		__list_iterator() {}
+		__list_iterator(Node* x) : __list_iterator_base(x) {}
+		__list_iterator(const iterator& x) :__list_iterator_base(x.node) { }
 		~__list_iterator() = default;
 
 
 		// 对迭代器取值
-		reference operator*() const { return ((node*)m_node)->data; }
+		reference operator*() const { return ((Node*)node)->data; }
 		// 对迭代器成员存取的标准操作
 		pointer operator->() const { return &(operator*()); }
 
@@ -104,6 +99,13 @@ namespace MySTL {
 			this->decr();
 			return temp;
 		}
+
+		self& operator+(int n)
+		{
+			for (int i = n; i > 0; --i)
+				this->incr();
+			return *this;
+		}
 	};
 
 	// 循环双向链表
@@ -111,19 +113,19 @@ namespace MySTL {
 	class list
 	{
 	public:
-		using value_type = T;
-		using pointer = value_type*;
-		using const_pointer = const value_type*;
-		using reference = value_type&;
-		using const_reference = const value_type&;
-		using size_type = size_t;
-		using difference_type = ptrdiff_t;
-		using iterator = __list_iterator<T, T&, T*>;
-		using const_iterator = __list_iterator<T, const T&, const T*>;
+		using value_type		= T;
+		using pointer			= value_type*;
+		using const_pointer		= const value_type*;
+		using reference			= value_type&;
+		using const_reference	= const value_type&;
+		using size_type			= size_t;
+		using difference_type	= ptrdiff_t;
+		using iterator			= __list_iterator<T, T&, T*>;
+		using const_iterator	= __list_iterator<T, const T&, const T*>;
 	protected:
 		// in list 
 		using list_node = __list_node<T>;
-		using list_node_allocator = simple_alloc<T, Alloc>;
+		using list_node_allocator = simple_alloc<list_node, alloc>;
 	public:
 		using link_type = list_node*;
 	protected:
@@ -177,13 +179,14 @@ namespace MySTL {
 
 		bool empty() const { return node->next == node; }
 
+		// 容器大小
 		size_type size() const
 		{
 			size_type result = 0;
-			//distance(begin(), end(), result);
-			// distance并没有重载三个参数的，为什么能这样写？我认为应该是下面的，
-			// 但在SGI中也是这样写的，不理解
-			result = distance(begin(), end());
+			// 应为const类型的
+		    result = distance(cbegin(), cend());
+			// distance并没有重载三个参数的，为什么能这样distance(begin(), end(),result);写？
+			// 我认为应该是我这样的，但在SGI中也是这样写的，不理解
 			return result;
 		}
 
@@ -195,17 +198,18 @@ namespace MySTL {
 		reference back() { return *end(); }
 		const_reference cback() const { return *cend(); }
 
+		// 交换list节点
 		void swap(list<T, Alloc>& x) { std::swap(node, x.node); }
 	
 		// 在position插入一个节点，内容为x
 		iterator insert(iterator position, const T& x)
 		{
 			link_type temp = create_node(x);
-			temp->next = position.m_node;
-			temp->prev = position.m_node.prev;
+			temp->next = position.node;
+			temp->prev = position.node->prev;
 
-			position.m_node.prev->next = temp;
-			position.m_node.prev = temp;
+			position.node->prev->next = temp;
+			position.node->prev = temp;
 			return temp;
 		}
 		
@@ -246,24 +250,37 @@ namespace MySTL {
 		iterator erase(iterator position)
 		{
 			// 保存摘除节点的前后
-			__list_node_base* next_node = link_type(position.m_node)->next;
-			__list_node_base* prev_node = position.m_node.prev;
+			__list_node_base* next_node = link_type(position.node)->next;
+			__list_node_base* prev_node = position.node->prev;
 
-			link_type n = (link_type*)position.m_node;
+			link_type n = (link_type)position.node;
 			// 下一个节点的上一个节点变成prev，上一个节点的下一个变成next
 			next_node->prev = prev_node;
 			prev_node->next = next_node;
 
 			destroy_node(n);
-			return iterator((list_node*)next_node;)
+			return iterator((list_node*)next_node);
+		}
+
+		// 移除迭代器范围内的节点
+		iterator erase(iterator first, iterator last)
+		{
+			//iterator temp = first;
+			//for (; temp != last; ++temp)
+			//	erase(temp);
+			while (first != last)
+				erase(first++);
+			return last;
 		}
 
 		// 清空链表，还原成初始节点
 		void clear();
 
 		// 重整链表，如果实际长度等于新长度，将i到end之后的节点删除，否则就插入直到大小为new_size
-		void resize(size_type new_size, const T& x);
 		void resize(size_type new_size) { return resize(new_size, T()); }
+
+		void resize(size_type new_size, const T& x);
+
 
 		// 弹出头节点
 		void pop_front() { erase(begin()); }
@@ -295,6 +312,39 @@ namespace MySTL {
 		{
 			empty_initialize();
 			this->insert(begin(), first, last);
+		}
+
+		list(const list& x)
+		{
+			empty_initialize();
+			this->insert(begin(), x.cbegin(), x.cend());
+		}
+
+		list(list&& x) noexcept
+		{
+			empty_initialize();
+			swap(x);
+		}
+
+
+		list& operator=(const list& x)
+		{
+			if (this != &x)
+			{
+				iterator first1 = begin();
+				iterator last1 = end();
+
+				const_iterator first2 = x.cbegin();
+				const_iterator last2 = x.cend();
+				while (first1 != last1 && first2 != last2)
+					*first1 ++ = *first2 ++;
+				// 如果多了就删除，如果少了就添加
+				if (first2 == last2)
+					erase(first1, last1);
+				else
+					insert(last1, first2, last2);
+			}
+			return *this;
 		}
 
 		~list() = default;
@@ -368,6 +418,7 @@ namespace MySTL {
 		else
 			insert(end(), new_size - len, x);
 	}
+
 	template<class T, class Alloc>
 	void list<T, Alloc>::remove(const T& value)
 	{
@@ -408,15 +459,15 @@ namespace MySTL {
 		if (position != last)
 		{
 			// last前一个节点向后指向position，first前一个节点的向后指向last...
-			last.m_node.prev->next = position.m_node;
-			first.m_node.prev->next = last.m_node;
-			position.m_node.prev->next = first.m_node;
+			last.node->prev->next = position.node;
+			first.node->prev->next = last.node;
+			position.node->prev->next = first.node;
 
 			// 将向前的指针指向挪动后的位置
-			link_type temp = position.m_node.prev;
-			position.m_node.prev = last.m_node.prev;
-			last.m_node.prev = first.m_node.prev;
-			first.m_node.prev = temp;
+			__list_node_base* temp = position.node->prev;
+			position.node->prev = last.node->prev;
+			last.node->prev = first.node->prev;
+			first.node->prev = temp;
 		}
 	}
 
@@ -480,7 +531,7 @@ namespace MySTL {
 		list<T, Alloc> counter[64];
 
 		// 用于记录当前可处理的数据个数
-		int fill = 0;
+		int m_fill = 0;
 
 		while (!empty())
 		{
@@ -489,7 +540,7 @@ namespace MySTL {
 			int i = 0;
 			// 当上一层链表满了，转移到下一层中，一层只有为空或不为空的状态，
 			// 若为空则将上层填入，此时本层填充一半，再填充时本层满，往下层填充
-			while (i < fill && !counter[i].empty())
+			while (i < m_fill && !counter[i].empty())
 			{
 				// merge将carry合并到counter[i]中，merge的数据是递增的，开始时是单个元素，也算是有序
 				counter[i].merge(carry);
@@ -500,13 +551,13 @@ namespace MySTL {
 			// 将carry中的数据交换给counter[i]
 			carry.swap(counter[i]);
 			// 当存储到fill时，扩充
-			if (i == fill) ++fill;
+			if (i == m_fill) ++m_fill;
 		}
 
 		// 最后合并counter，再将它与原始链表交换
-		for (int i = 1; i < fill; ++i)
+		for (int i = 1; i < m_fill; ++i)
 			counter[i].merge(counter[i - 1]);
-		swap(counter[fill - 1]);
+		swap(counter[m_fill - 1]);
 		// 例如21，45，1，6这三个数据
 		// 先将21摘除放置于carry中，此时i=fill不满足条件
 		// 执行carry.swap(counter[i])，此时carry为空，counter[0]有一个数据21，扩充fill进入下一轮
