@@ -1,6 +1,5 @@
 #pragma once
 #include "alloc.h"
-#include "construct.h"
 #include "uninitialized.h"
 
 
@@ -58,7 +57,7 @@ namespace MySTL
 			// 配置n个元素空间
 			iterator result = data_allocator::allocate(n);
 			// 填充函数
-			uninitialized_fill_n(result, n, x);
+			m_uninitialized_fill_n(result, n, x);
 			return result;
 		}
 
@@ -83,6 +82,14 @@ namespace MySTL
 		reference operator[](size_type n) { return *(begin() + n); }
 		const_reference operator[](size_type n) const { return *(begin() + n); }
 
+		vector operator+(vector& rhs)
+		{
+			for (auto x : rhs)
+			{
+				this->push_back(x);
+			}
+			return *this;
+		}
 	public:
 		// 默认的
 		vector() : start(0), finish(0), end_of_storage(0) {}
@@ -90,6 +97,31 @@ namespace MySTL
 		vector(size_type n, const T& value) { fill_initialize(n, value); }
 		vector(int n, const T& value) { fill_initialize(n, value); }
 		vector(long n, const T& value) { fill_initialize(n, value); }
+		vector(const vector& x)
+		{
+			start = data_allocator::allocate(x.capacity());
+			finish = m_uninitialized_copy(x.begin(), x.end(), start);
+			end_of_storage = start + x.capacity();
+		}
+
+		vector& operator=(const vector& x)
+		{
+			if (this != &x)
+			{
+				vector temp(x);
+				swap(temp);
+			}
+			return *this;
+		}
+
+		vector(vector&& x) noexcept:
+			start(x.start), finish(x.finish),
+			end_of_storage(x.end_of_storage)
+		{
+			x.start = nullptr;
+			x.finish = nullptr;
+			x.end_of_storage = nullptr;
+		}
 
 		// 没有参数，使用元素的默认构造函数进行构造
 		explicit vector(size_type n) { fill_initialize(n, T()); }
@@ -127,16 +159,32 @@ namespace MySTL
 		iterator erase(iterator position)
 		{
 			if (position + 1 != end())
-				copy(position + 1, finish, position);
+				m_copy(position + 1, finish, position);
 			--finish;
 			destroy(finish);
 			return position;
+		}
+
+		iterator erase(iterator first, iterator last)
+		{
+			iterator i = m_copy(last, finish, first);
+			destroy(i, finish);
+			finish = finish - (last - first);
+			return first;
 		}
 
 		void clear() 
 		{
 			erase(begin(), end());
 		}
+
+		void swap(vector& x)
+		{
+			std::swap(start, x.start);
+			std::swap(finish, x.finish);
+			std::swap(end_of_storage, x.end_of_storage);
+		}
+
 
 		// 插入位置，数量，值
 		void insert(iterator positiion, size_type n, const T& x);
@@ -148,6 +196,11 @@ namespace MySTL
 				erase(begin() + new_size, end());
 			else
 				insert(end(), new_size - size(), x);
+		}
+
+		void resize(size_type new_size)
+		{
+			resize(new_size, T());
 		}
 
 		// 现在的vector的emplace_back
@@ -199,7 +252,7 @@ namespace MySTL
 			++finish;
 			T x_copy = x;
 			// 从finish-1的位置开始复制，从后往前复制，为了腾出一个空间
-			copy_backward(position, finish - 2, finish - 1);
+			m_copy_backward(position, finish - 2, finish - 1);
 			// 将腾出的空间赋值为x
 			*position = x_copy;
 		}
@@ -216,12 +269,12 @@ namespace MySTL
 			try
 			{
 				// 和if的操作差不多，现将旧容器要插入的元素位置前的元素拷贝到新容器中
-				new_finish = uninitialized_copy(start, position, new_start);
+				new_finish = m_uninitialized_copy(start, position, new_start);
 				// 然后在结尾构造一个新元素，移动迭代器
 				construct(new_finish, x);
 				++new_finish;
 				// 再将久容器的剩下元素拷贝过去
-				new_finish = uninitialized_copy(position, finish, new_finish);
+				new_finish = m_uninitialized_copy(position, finish, new_finish);
 			}
 			catch (...)
 			{
@@ -259,13 +312,13 @@ namespace MySTL
 				if (elems_after > n)
 				{
 					// 在finish之后插入finish之前n个元素，即将[finish-n,finish)填充到[finish, finish+n)
-					uninitialized_copy(finish - n, finish, finish);
+					m_uninitialized_copy(finish - n, finish, finish);
 					// 移动尾标记
 					finish += n;
 					// 将源区间[position, old_finish-n)逆向填充到[old_finish-n, old_finish)中
-					copy_backward(position, old_finish - n, old_finish);
+					m_copy_backward(position, old_finish - n, old_finish);
 					// 将目标区间[position, position+n)填充成x_copy
-					fill(position, position + n, x_copy);
+					m_fill(position, position + n, x_copy);
 
 					/*
 					* 整体流程：先在源区域末尾切出一块与待插入区间等长的片段用于初始化备用空间
@@ -281,13 +334,13 @@ namespace MySTL
 				else
 				{
 					// 将[finish, finish+(elems_after))全部填充成x_copy
-					uninitialized_fill_n(finish, n - elems_after, x_copy);
+					m_uninitialized_fill_n(finish, n - elems_after, x_copy);
 					finish += n - elems_after;
 					// 将源区间[position, old_finish)填充到目标区间[finish, finish + (old_finish - position))
-					uninitialized_copy(position, old_finish, finish);
+					m_uninitialized_copy(position, old_finish, finish);
 					finish += elems_after;
 					// 将目标区间[position, old_finish)填充成x_copy
-					fill(position, old_finish, x_copy);
+					m_fill(position, old_finish, x_copy);
 
 					/*
 					* 整体流程：先在备用空间填充n-elems_after个x_copy，
@@ -309,15 +362,15 @@ namespace MySTL
 				// 新空间为旧空间的两倍或旧长度+新增元素个数中的最大值
 				const size_type new_size = old_size + max(old_size, n);
 
-				iterator new_start = data_allocator::allocator(new_size);
+				iterator new_start = data_allocator::allocate(new_size);
 				iterator new_finish = new_start;
 
 				try 
 				{
 					// 先将position之前的复制到新空间，再插入n个x，再将源内容复制到后面
-					new_finish = uninitialized_copy(start, position, new_start);
-					new_finish = uninitialized_fill_n(new_finish, n, x);
-					new_finish = uninitialized_copy(position, finish, new_finish);
+					new_finish = m_uninitialized_copy(start, position, new_start);
+					new_finish = m_uninitialized_fill_n(new_finish, n, x);
+					new_finish = m_uninitialized_copy(position, finish, new_finish);
 				}
 				catch (...)
 				{
