@@ -97,6 +97,7 @@ namespace MySTL
 		vector(size_type n, const T& value) { fill_initialize(n, value); }
 		vector(int n, const T& value) { fill_initialize(n, value); }
 		vector(long n, const T& value) { fill_initialize(n, value); }
+		// 拷贝
 		vector(const vector& x)
 		{
 			start = data_allocator::allocate(x.capacity());
@@ -104,6 +105,7 @@ namespace MySTL
 			end_of_storage = start + x.capacity();
 		}
 
+		// 拷贝赋值
 		vector& operator=(const vector& x)
 		{
 			if (this != &x)
@@ -114,6 +116,7 @@ namespace MySTL
 			return *this;
 		}
 
+		// 移动构造
 		vector(vector&& x) noexcept:
 			start(x.start), finish(x.finish),
 			end_of_storage(x.end_of_storage)
