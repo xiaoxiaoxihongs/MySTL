@@ -1,3 +1,4 @@
+#pragma once
 
 #if 0
 #    include<new>
@@ -393,7 +394,7 @@ namespace MySTL
 		else if (bytes_left >= size)
 		{
 			// 重新设置能够分配的节点个数，pass by reference
-			nFreeList = bytes_left / size;
+			nFreeList = (size_t)bytes_left / size;
 			// 重新设置总申请空间
 			total_bytes = size * nFreeList;
 			// 和上面分配一样
