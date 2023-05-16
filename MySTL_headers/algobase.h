@@ -7,15 +7,16 @@ namespace MySTL
 {
 	// 将[first, last)内用value填充
 	template<class ForwardIterator, class T>
-	ForwardIterator fill(ForwardIterator first, ForwardIterator last, const T& value)
+	ForwardIterator m_fill(ForwardIterator first, ForwardIterator last, const T& value)
 	{
 		for (; first != last; ++first)
 			*first = value;
+		return first;
 	}
 
 	// 将[first, last)内前n个元素该填新值，返回的迭代器指向被填入的最后一个元素的下一个位置
 	template<class OutputIterator, class size, class T>
-	OutputIterator fill_n(OutputIterator first, size n, const T& value)
+	OutputIterator m_fill_n(OutputIterator first, size n, const T& value)
 	{
 		for (; n > 0; --n, ++first) *first = value;
 		return first;
@@ -124,7 +125,7 @@ namespace MySTL
 		// copy算法将[first, last)区间的元素复制到[result, result+(last-first))区间内
 		// 返回一个迭代器result+(last-first)
 		template<class InputIterator, class OutputIterator>
-		inline OutputIterator copy(InputIterator first, InputIterator last,
+		inline OutputIterator m_copy(InputIterator first, InputIterator last,
 			OutputIterator result)
 		{
 			// 但在SGI里面这一段里是被用作针对某些特殊template所做的
@@ -133,7 +134,7 @@ namespace MySTL
 		}
 
 		// 对原生的char类型进行重载，使用底层memmove函数，速度快
-		inline char* copy(const char* first, const char* last, char* result)
+		inline char* m_copy(const char* first, const char* last, char* result)
 		{
 			// memmove比memcpy慢，但是保证拷贝结果正确
 			// 复制n个
@@ -174,7 +175,7 @@ namespace MySTL
 
 	// 将[first,last)的内容复制到result + (last - first)区间内
 	template<class InputIterator, class OutputIterator>
-	inline OutputIterator copy(InputIterator first, InputIterator last,
+	inline OutputIterator m_copy(InputIterator first, InputIterator last,
 		OutputIterator result)
 	{
 		return __copy(first, last, result, ITERATOR_CATEGORY(first), DISTANCE_TYPE(first));
@@ -183,7 +184,7 @@ namespace MySTL
 
 	// SGI中使用define之间支持char、short等原生类型，而不是直接重载，这样写方便一点
 #define __MYSTL_DECLARE_COPY_TRIVIAL(_T)						\
-	inline _T* copy(const _T* first,const _T* last, _T* result)	\
+	inline _T* m_copy(const _T* first,const _T* last, _T* result)	\
 	{															\
 		memmove(result, first, last - first);					\
 		return result + (last - first);							\
@@ -233,7 +234,7 @@ namespace MySTL
 
 	// 将[first, last)的内容从result开始往前复制
 	template<class BidirectionalIterator1, class BidirectionalIterator2>
-	inline BidirectionalIterator2 copy_backward(BidirectionalIterator1 first, 
+	inline BidirectionalIterator2 m_copy_backward(BidirectionalIterator1 first, 
 		BidirectionalIterator1 last,BidirectionalIterator2 result) 
 	{
 		return __copy_backward(first, last, result, ITERATOR_CATEGORY(first), DISTANCE_TYPE(first));
