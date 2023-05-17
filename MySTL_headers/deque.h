@@ -809,7 +809,7 @@ namespace MySTL
 			如果直接用<=的话，就会多填充，导致内存越界或覆盖已有元素等未定义行为。
 			*/ 
 			for (cur = this->_start.node; cur < this->_finish.node; ++cur)
-				m_uninitialized_fill(*cur, *cur + _buffer_size, value);
+				m_uninitialized_fill(*cur, *cur + _buffer_size(), value);
 			m_uninitialized_fill(this->_finish.first, this->_finish.cur, value);
 		}
 		catch (...)
