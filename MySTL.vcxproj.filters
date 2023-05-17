@@ -43,11 +43,23 @@
       <Filter>头文件\STL_header</Filter>
     </ClInclude>
     <ClInclude Include="MySTL_headers\deque.h">
-      <Filter>头文件</Filter>
+      <Filter>头文件\STL_header</Filter>
+    </ClInclude>
+    <ClInclude Include="MySTL_headers\queue.h">
+      <Filter>头文件\STL_header</Filter>
+    </ClInclude>
+    <ClInclude Include="MySTL_headers\heap.h">
+      <Filter>头文件\STL_header</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="mian.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="MySTL_headers\stack.h">
+      <Filter>头文件\STL_header</Filter>
+    </ClCompile>
+    <ClCompile Include="垃圾.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

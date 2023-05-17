@@ -139,18 +139,22 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="MySTL_headers\deque.h" />
     <ClInclude Include="MySTL_headers\algobase.h" />
     <ClInclude Include="MySTL_headers\alloc.h" />
     <ClInclude Include="MySTL_headers\construct.h" />
+    <ClInclude Include="MySTL_headers\deque.h" />
+    <ClInclude Include="MySTL_headers\heap.h" />
     <ClInclude Include="MySTL_headers\iterator_base.h" />
     <ClInclude Include="MySTL_headers\list.h" />
+    <ClInclude Include="MySTL_headers\queue.h" />
     <ClInclude Include="MySTL_headers\type_traits.h" />
     <ClInclude Include="MySTL_headers\uninitialized.h" />
     <ClInclude Include="MySTL_headers\vector.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="mian.cpp" />
+    <ClCompile Include="MySTL_headers\stack.h" />
+    <ClCompile Include="垃圾.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
