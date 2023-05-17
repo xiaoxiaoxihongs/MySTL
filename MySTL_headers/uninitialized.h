@@ -41,9 +41,9 @@ namespace MySTL
 	}
 
 	template<class ForwardIterator, class T>
-	inline void uninitialized_fill(ForwardIterator first, ForwardIterator last, const T& x)
+	inline void m_uninitialized_fill(ForwardIterator first, ForwardIterator last, const T& x)
 	{
-		__uninitialized_fill(first, last, T, VALUE_TYPE(first));
+		__uninitialized_fill(first, last, x, VALUE_TYPE(first));
 	}
 	// fill_n
 	template<class ForwardIterator, class size, class T>

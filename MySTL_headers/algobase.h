@@ -7,11 +7,10 @@ namespace MySTL
 {
 	// 将[first, last)内用value填充
 	template<class ForwardIterator, class T>
-	ForwardIterator m_fill(ForwardIterator first, ForwardIterator last, const T& value)
+	void m_fill(ForwardIterator first, ForwardIterator last, const T& value)
 	{
 		for (; first != last; ++first)
 			*first = value;
-		return first;
 	}
 
 	// 将[first, last)内前n个元素该填新值，返回的迭代器指向被填入的最后一个元素的下一个位置
