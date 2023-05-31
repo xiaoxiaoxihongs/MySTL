@@ -281,7 +281,6 @@ namespace MySTL {
 
 		void resize(size_type new_size, const T& x);
 
-
 		// 弹出头节点
 		void pop_front() { erase(begin()); }
 
